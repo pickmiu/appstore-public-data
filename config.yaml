@@ -10,14 +10,52 @@ retention:
   rankings_days: 180           # 榜单快照默认保留天数 (半年)
 
 # 2. 监控应用列表 (增量评价监控)
-# 默认仅监控中美两区，且不监控游戏
+# 涵盖核心大模型、垂直场景标杆与中国区头部梯队，精准匹配其上架国家 (US / CN)
 monitored_apps:
+  # --- 全球核心大模型与助手 ---
+  - id: "6448311069"
+    name: "ChatGPT"
+    countries: ["us"]
   - id: "6670324846"
     name: "Grok AI"
-    countries: ["us", "cn"]
+    countries: ["us"]
+  - id: "6794501026"
+    name: "Grok Bot"
+    countries: ["us"]
+  - id: "6473753684"
+    name: "Claude by Anthropic"
+    countries: ["us"]
+
+  # --- 垂直场景代表 (搜索、社交、视频、创意) ---
+  - id: "1668000334"
+    name: "Perplexity"
+    countries: ["us"]
   - id: "6760173601"
     name: "Muse from Meta"
-    countries: ["us", "cn"]
+    countries: ["us"]
+  - id: "6738049229"
+    name: "Kling AI (可灵国际版)"
+    countries: ["us"]
+  - id: "6670396916"
+    name: "可灵AI (国内版)"
+    countries: ["cn"]
+  - id: "1671705818"
+    name: "Character AI"
+    countries: ["us"]
+
+  # --- 中国区头部大模型梯队 ---
+  - id: "6459478672"
+    name: "豆包"
+    countries: ["cn"]
+  - id: "6466733523"
+    name: "通义千问"
+    countries: ["cn"]
+  - id: "6474233312"
+    name: "Kimi"
+    countries: ["cn", "us"]
+  - id: "6737597349"
+    name: "DeepSeek"
+    countries: ["cn", "us"]
 
 # 3. 榜单快照配置 (每日北京时间 00:00 执行)
 rankings:
