@@ -94,29 +94,32 @@ def fetch_rss_page_reviews(
     app_name: str,
     country: str,
     page: int = 1,
-    sort_by: str = "mostrecent",
+    sort_by: str = "mostRecent",
     max_retries: int = 2
 ) -> List[Dict[str, Any]]:
     """
-    通过 Apple iTunes RSS 抓取指定国家的一页最新评价
-    带有自动指数退避重试 (Backoff Retry)
-    注：Apple 服务端严格区分大小写，必须使用全小写 `sortby=mostrecent`，且必须显式包含 `page={page}`
+    通过 Apple iTunes RSS 抓取指定国家的一页评价 (单页最多 50 条)
+    带有自动指数退避重试 (Backoff Retry) 与大小写参数自动容错
     """
-    sort_param = sort_by.lower()
-    url = f"https://itunes.apple.com/{country}/rss/customerreviews/page={page}/id={app_id}/sortby={sort_param}/json"
-
-    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+    canonical_sort = "mostHelpful" if "helpful" in sort_by.lower() else "mostRecent"
+    # 支持 camelCase (sortBy=mostRecent) 与全小写 (sortby=mostrecent) 兜底
+    url_patterns = [
+        f"https://itunes.apple.com/{country}/rss/customerreviews/page={page}/id={app_id}/sortBy={canonical_sort}/json",
+        f"https://itunes.apple.com/{country}/rss/customerreviews/page={page}/id={app_id}/sortby={canonical_sort.lower()}/json"
+    ]
 
     for attempt in range(max_retries + 1):
-        try:
-            with urllib.request.urlopen(req, timeout=REQUEST_TIMEOUT) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-                feed = data.get("feed", {})
-                entries = feed.get("entry", [])
-                if not entries:
-                    return []
-                if isinstance(entries, dict):
-                    entries = [entries]
+        for url in url_patterns:
+            req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+            try:
+                with urllib.request.urlopen(req, timeout=REQUEST_TIMEOUT) as resp:
+                    data = json.loads(resp.read().decode("utf-8"))
+                    feed = data.get("feed", {})
+                    entries = feed.get("entry", [])
+                    if not entries:
+                        continue
+                    if isinstance(entries, dict):
+                        entries = [entries]
 
                 reviews = []
                 for entry in entries:
