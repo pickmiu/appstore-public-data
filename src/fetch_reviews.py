@@ -27,52 +27,64 @@ USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36
 
 def fetch_web_featured_reviews(app_id: str, app_name: str, country: str = "us") -> List[Dict[str, Any]]:
     """
-    从 App Store 官方 Web 落地页抓取精选高赞评价 (Most Helpful)
-    直接解析 Apple SvelteKit 服务端渲染 (SSR) 的 allProductReviews 数据块
+    从 App Store 官方 Web 端多维度抓取精选评价 (Most Helpful / Featured Reviews)
+    覆盖落地页及查看全部评价接口 (?see-all=reviews&platform=iphone/web)
     """
-    url = f"https://apps.apple.com/{country}/app/id{app_id}"
-    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    featured_reviews = []
+    target_urls = [
+        f"https://apps.apple.com/{country}/app/id{app_id}",
+        f"https://apps.apple.com/{country}/app/{app_id}?see-all=reviews&platform=iphone",
+        f"https://apps.apple.com/{country}/app/{app_id}?see-all=reviews&platform=web"
+    ]
     
-    try:
-        with urllib.request.urlopen(req, timeout=REQUEST_TIMEOUT) as resp:
-            html = resp.read().decode("utf-8")
-            scripts = re.findall(r"<script[^>]*>(.*?)</script>", html, re.DOTALL)
-            for s in scripts:
-                if "allProductReviews" in s:
-                    data = json.loads(s)
-                    data_items = data.get("data", [{}])
-                    for d_block in data_items:
-                        items = d_block.get("data", {}).get("shelfMapping", {}).get("allProductReviews", {}).get("items", [])
-                        for item in items:
-                            rev = item.get("review", {})
-                            if not rev:
-                                continue
-                            
-                            review_id = str(rev.get("id") or rev.get("targetReviewId", ""))
-                            title = str(rev.get("title", ""))
-                            content = str(rev.get("contents") or rev.get("body") or rev.get("text", ""))
-                            author = str(rev.get("reviewerName", "Anonymous"))
-                            rating = rev.get("rating", 5)
-                            review_date = rev.get("date", "")
-                            
-                            featured_reviews.append({
-                                "review_id": review_id,
-                                "app_id": str(app_id),
-                                "app_name": app_name,
-                                "country": country,
-                                "rating": rating,
-                                "title": title,
-                                "content": content,
-                                "author": author,
-                                "version": "",
-                                "review_date": review_date,
-                                "is_most_helpful": True,
-                                "source": "web_ssr_helpful"
-                            })
-                    break
-    except Exception as e:
-        print(f"[{country.upper()}] 抓取 Web 落地页精选评价失败: {e}", file=sys.stderr)
+    seen_review_ids = set()
+    featured_reviews = []
+
+    for url in target_urls:
+        req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+        try:
+            with urllib.request.urlopen(req, timeout=REQUEST_TIMEOUT) as resp:
+                html = resp.read().decode("utf-8")
+                scripts = re.findall(r"<script[^>]*>(.*?)</script>", html, re.DOTALL)
+                for s in scripts:
+                    if "allProductReviews" in s:
+                        data = json.loads(s)
+                        data_items = data.get("data", [{}])
+                        for d_block in data_items:
+                            items = d_block.get("data", {}).get("shelfMapping", {}).get("allProductReviews", {}).get("items", [])
+                            for item in items:
+                                rev = item.get("review", {})
+                                if not rev:
+                                    continue
+                                
+                                review_id = str(rev.get("id") or rev.get("targetReviewId", ""))
+                                if not review_id or review_id in seen_review_ids:
+                                    continue
+                                
+                                seen_review_ids.add(review_id)
+                                title = str(rev.get("title", ""))
+                                content = str(rev.get("contents") or rev.get("body") or rev.get("text", ""))
+                                author = str(rev.get("reviewerName", "Anonymous"))
+                                rating = rev.get("rating", 5)
+                                review_date = rev.get("date", "")
+                                
+                                featured_reviews.append({
+                                    "review_id": review_id,
+                                    "app_id": str(app_id),
+                                    "app_name": app_name,
+                                    "country": country,
+                                    "rating": rating,
+                                    "title": title,
+                                    "content": content,
+                                    "author": author,
+                                    "version": "",
+                                    "review_date": review_date,
+                                    "is_most_helpful": True,
+                                    "source": "web_ssr_helpful"
+                                })
+                        break
+        except Exception as e:
+            # 忽略非核心视图报错
+            pass
 
     return featured_reviews
 
