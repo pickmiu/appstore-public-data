@@ -51,3 +51,8 @@ rankings:
 
   # 二级品类配置 (因排除游戏，原游戏子品类 7001~7019 全部移除，默认不抓取游戏二级品类)
   secondary_genres: []
+
+# 4. 洪峰监控与告警配置 (防漏抓满载检测)
+monitoring:
+  overflow_alert_threshold: 300   # 单次新增触碰上限预警阈值 (默认 300 条，结合 10 页满载触发 GitHub Actions 告警)
+

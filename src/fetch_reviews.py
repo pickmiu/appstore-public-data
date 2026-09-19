@@ -121,63 +121,109 @@ def fetch_rss_page_reviews(
                     if isinstance(entries, dict):
                         entries = [entries]
 
-                reviews = []
-                for entry in entries:
-                    if not isinstance(entry, dict):
-                        continue
-                    rating_obj = entry.get("im:rating")
-                    if not rating_obj:
-                        continue  # 过滤 App 自身元数据
+                    reviews = []
+                    for entry in entries:
+                        if not isinstance(entry, dict):
+                            continue
+                        rating_obj = entry.get("im:rating")
+                        if not rating_obj:
+                            continue  # 过滤 App 自身元数据
 
-                    review_id = entry.get("id", {}).get("label", "")
-                    title = entry.get("title", {}).get("label", "")
-                    content = entry.get("content", {}).get("label", "")
-                    rating = rating_obj.get("label", "5")
-                    version = entry.get("im:version", {}).get("label", "")
-                    author = entry.get("author", {}).get("name", {}).get("label", "Anonymous")
-                    updated = entry.get("updated", {}).get("label", "")
+                        review_id = entry.get("id", {}).get("label", "")
+                        title = entry.get("title", {}).get("label", "")
+                        content = entry.get("content", {}).get("label", "")
+                        rating = rating_obj.get("label", "5")
+                        version = entry.get("im:version", {}).get("label", "")
+                        author = entry.get("author", {}).get("name", {}).get("label", "Anonymous")
+                        updated = entry.get("updated", {}).get("label", "")
 
-                    reviews.append({
-                        "review_id": review_id,
-                        "app_id": str(app_id),
-                        "app_name": app_name,
-                        "country": country,
-                        "rating": rating,
-                        "title": title,
-                        "content": content,
-                        "author": author,
-                        "version": version,
-                        "review_date": updated,
-                        "is_most_helpful": False,
-                        "source": f"itunes_rss_{sort_by}"
-                    })
-                return reviews
-        except urllib.error.HTTPError as e:
-            if e.code in (400, 404):
+                        reviews.append({
+                            "review_id": review_id,
+                            "app_id": str(app_id),
+                            "app_name": app_name,
+                            "country": country,
+                            "rating": rating,
+                            "title": title,
+                            "content": content,
+                            "author": author,
+                            "version": version,
+                            "review_date": updated,
+                            "is_most_helpful": False,
+                            "source": f"itunes_rss_{sort_by}"
+                        })
+                    return reviews
+            except urllib.error.HTTPError as e:
+                if e.code in (400, 404):
+                    return []
+                if attempt < max_retries:
+                    time.sleep(1.0 * (attempt + 1))
+                    continue
+                print(f"[{country.upper()}|{sort_by}] 第 {page} 页 HTTP 错误: {e.code}", file=sys.stderr)
                 return []
-            if attempt < max_retries:
-                time.sleep(1.0 * (attempt + 1))
-                continue
-            print(f"[{country.upper()}|{sort_by}] 第 {page} 页 HTTP 错误: {e.code}", file=sys.stderr)
-            return []
-        except Exception as e:
-            if attempt < max_retries:
-                time.sleep(1.0 * (attempt + 1))
-                continue
-            return []
+            except Exception as e:
+                if attempt < max_retries:
+                    time.sleep(1.0 * (attempt + 1))
+                    continue
+                return []
     return []
+
+
+def check_overflow_risk(
+    app_name: str,
+    app_id: str,
+    added_count: int,
+    hit_ceiling: bool,
+    threshold: int = 300
+) -> Optional[str]:
+    """
+    满载与漏抓风险判定：
+    当单次轮询达到接口 500 条物理上限（第 10 页满载 50 条），且有效新增入库量达到预警阈值（默认 >= 300 条），
+    判定存在评论在两次轮询间被挤出窗口的漏抓风险。
+    """
+    if hit_ceiling and added_count >= threshold:
+        return (
+            f"应用 [{app_name}] (ID: {app_id}) 单次新增评价达 {added_count} 条且触及 500 条物理上限！"
+            f"在两次轮询间隔内极可能存在新评论被挤出窗口的漏抓风险，建议关注！"
+        )
+    return None
+
+
+def emit_github_action_warning(title: str, message: str) -> None:
+    """
+    输出 GitHub Actions 官方高亮告警并在 Job 汇总生成 Markdown 预警
+    1. 通过 ::warning 工作流注解在 GitHub Actions 页面直接生成黄色/高优先级警告横幅
+    2. 追加到 $GITHUB_STEP_SUMMARY 渲染 GitHub 原生 Alert 呼出框
+    """
+    # 1. 终端与控制台显式警报
+    print("\n" + "!" * 65, file=sys.stderr)
+    print(f"🚨 [满载告警] {title}\n{message}", file=sys.stderr)
+    print("!" * 65 + "\n", file=sys.stderr)
+
+    # 2. GitHub Actions Annotation 语法
+    print(f"::warning title={title}::{message}")
+
+    # 3. GitHub Actions Step Summary 渲染
+    summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
+    if summary_path:
+        try:
+            with open(summary_path, "a", encoding="utf-8") as f:
+                f.write(f"\n> [!WARNING]\n> ### ⚠️ {title}\n> {message}\n>\n> *建议：当前调度已设定为 30 分钟轮询。若持续满载，请人工核查是否出现全网舆情暴涨或爆款出圈。*\n\n")
+        except Exception as e:
+            print(f"[警告] 写入 GITHUB_STEP_SUMMARY 失败: {e}", file=sys.stderr)
 
 
 def monitor_app_reviews(
     app_id: str,
     app_name: str,
     countries: List[str],
-    max_pages_per_country: int = 10
-) -> List[Dict[str, Any]]:
+    max_pages_per_country: int = 10,
+    return_stats: bool = False
+) -> Any:
     """
     对指定应用的所有目标国家进行增量评价监控：
     1. 抓取 Web 落地页最有帮助 (Most Helpful) 评价 (通常为置顶 8 条)
     2. 抓取 RSS 最新评价 (mostrecent，Apple 单个国家公开接口上限 10 页共 500 条)
+    3. 满载与溢出检测：记录第 10 页是否满载 (50条)
     """
     print(f"\n==================================================")
     print(f"🚀 开始抓取应用评价: {app_name} (ID: {app_id})")
@@ -185,6 +231,10 @@ def monitor_app_reviews(
     print(f"==================================================")
 
     collected_reviews = []
+    overflow_stats = {
+        "hit_ceiling": False,
+        "ceiling_details": []
+    }
 
     for cc in countries:
         cc_lower = cc.lower()
@@ -195,34 +245,44 @@ def monitor_app_reviews(
             collected_reviews.extend(web_helpful)
 
         # 2. 抓取 RSS 评价 (同时覆盖 mostrecent 与 mosthelpful 双维度，单排序最多 10 页 500 条)
-        for sort_mode in ("mostrecent", "mosthelpful"):
+        for sort_mode in ("mostRecent", "mostHelpful"):
             page_counts = []
             for p in range(1, max_pages_per_country + 1):
                 page_data = fetch_rss_page_reviews(app_id, app_name, country=cc_lower, page=p, sort_by=sort_mode)
                 if not page_data:
                     break
                 page_counts.append(f"P{p}({len(page_data)})")
-                if sort_mode == "mosthelpful":
+                if sort_mode.lower() == "mosthelpful":
                     for item in page_data:
                         item["is_most_helpful"] = True
                 collected_reviews.extend(page_data)
                 time.sleep(0.2)
 
+                # 满载检测：如果抓到了第 10 页且第 10 页达到满页 (50 条)，说明触及苹果单次 500 条物理上限
+                if p == max_pages_per_country and len(page_data) >= 50:
+                    overflow_stats["hit_ceiling"] = True
+                    overflow_stats["ceiling_details"].append(f"{cc.upper()}|RSS {sort_mode} 达第 {p} 页满载({len(page_data)}条)")
+
             status_str = " ".join(page_counts) if page_counts else "无新增数据"
             print(f"  -> [{cc.upper()}|RSS {sort_mode}]: {status_str}")
 
     print(f"  ✅ 本次抓取候选总量: {len(collected_reviews)} 条")
+    if return_stats:
+        return collected_reviews, overflow_stats
     return collected_reviews
 
 
 def run_reviews_pipeline(config: Dict[str, Any]) -> None:
     """
-    根据配置全流程执行应用评价监控、入库与生命周期裁剪
+    根据配置全流程执行应用评价监控、入库与生命周期裁剪，并触发满载告警
     """
     retention_cfg = config.get("retention", {})
     retention_days = int(retention_cfg.get("reviews_days", 180))
     max_count = int(retention_cfg.get("reviews_max_count", 10000))
     keep_all_helpful = bool(retention_cfg.get("keep_all_helpful", True))
+
+    monitoring_cfg = config.get("monitoring", {})
+    overflow_threshold = int(monitoring_cfg.get("overflow_alert_threshold", 300))
 
     monitored_apps = config.get("monitored_apps", [])
     if not monitored_apps:
@@ -242,13 +302,26 @@ def run_reviews_pipeline(config: Dict[str, Any]) -> None:
 
         output_csv = os.path.join(data_dir, f"reviews_{app_id}.csv")
 
-        # 1. 抓取多渠道评价候选
-        raw_reviews = monitor_app_reviews(app_id, app_name, countries)
+        # 1. 抓取多渠道评价候选与满载统计
+        raw_reviews, overflow_stats = monitor_app_reviews(app_id, app_name, countries, return_stats=True)
 
         # 2. 增量追加入库并指纹去重
         report = save_reviews_to_csv(raw_reviews, output_csv, default_source="itunes_rss")
 
-        # 3. 执行数据生命周期裁剪 (180天保留 / 1w上限 / mostHelpful永久保护)
+        # 3. 满载与漏抓预警检测 (Git Action 告警)
+        warn_msg = check_overflow_risk(
+            app_name=app_name,
+            app_id=app_id,
+            added_count=report["added_count"],
+            hit_ceiling=overflow_stats.get("hit_ceiling", False),
+            threshold=overflow_threshold
+        )
+        if warn_msg:
+            details = "; ".join(overflow_stats.get("ceiling_details", []))
+            full_msg = f"{warn_msg} (满载详情: {details})"
+            emit_github_action_warning("App Store 评价满载预警 (漏抓风险)", full_msg)
+
+        # 4. 执行数据生命周期裁剪 (180天保留 / 1w上限 / mostHelpful永久保护)
         prune_report = prune_reviews_data(
             output_csv,
             retention_days=retention_days,
@@ -265,6 +338,8 @@ def run_reviews_pipeline(config: Dict[str, Any]) -> None:
         print(f"⏭️ 自动指纹去重: {report['skipped_count']} 条")
         print(f"✂️ 生命周期裁剪: 剔除 {prune_report.get('pruned_count', 0)} 条过期记录")
         print(f"📦 最终沉淀总量: {prune_report.get('total_after', 0)} 条 (高赞保护: {prune_report.get('helpful_retained', 0)} 条)")
+        if overflow_stats.get("hit_ceiling"):
+            print(f"⚠️ 满载监控状态: 触发 500 条上限 ({'; '.join(overflow_stats['ceiling_details'])})")
         print("-" * 50)
 
 

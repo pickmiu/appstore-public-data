@@ -21,6 +21,7 @@ from src.pipeline import (
     CSV_COLUMNS
 )
 from src.fetch_rankings import is_game_item, prune_historical_rankings
+from src.fetch_reviews import check_overflow_risk
 
 
 class TestPipeline(unittest.TestCase):
@@ -133,6 +134,21 @@ class TestPipeline(unittest.TestCase):
         self.assertEqual(deleted, 1)
         self.assertTrue(os.path.exists(os.path.join(rankings_dir, recent_name)))
         self.assertFalse(os.path.exists(os.path.join(rankings_dir, old_name)))
+
+    def test_overflow_risk_detection(self):
+        # 1. 达到上限且新增 >= 阈值 -> 触发告警
+        msg1 = check_overflow_risk("Muse", "6760173601", added_count=450, hit_ceiling=True, threshold=300)
+        self.assertIsNotNone(msg1)
+        self.assertIn("6760173601", msg1)
+        self.assertIn("450", msg1)
+
+        # 2. 达到上限但新增很小 (大部分是老评论重查) -> 不虚假告警
+        msg2 = check_overflow_risk("Muse", "6760173601", added_count=10, hit_ceiling=True, threshold=300)
+        self.assertIsNone(msg2)
+
+        # 3. 未触碰 500 条上限 (即使有少量新增) -> 不告警
+        msg3 = check_overflow_risk("Muse", "6760173601", added_count=200, hit_ceiling=False, threshold=300)
+        self.assertIsNone(msg3)
 
 
 if __name__ == "__main__":
