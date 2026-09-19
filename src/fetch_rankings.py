@@ -259,17 +259,15 @@ def generate_markdown_snapshot(
         "",
         f"## 🏆 免费主榜 Top {len(main_apps)} (纯应用)",
         "",
-        "| 排名 | 应用名称 | 开发者 | 核心分类 | App Store 链接 |",
-        "| :---: | :--- | :--- | :--- | :--- |"
+        "| 排名 | 应用名称 | 开发者 | 核心分类 |",
+        "| :---: | :--- | :--- | :--- |"
     ])
 
     for idx, app in enumerate(main_apps, 1):
         name = app.get("name", "").replace("|", "-")
         artist = app.get("artist", "").replace("|", "-")
         genre = app.get("genre", "")
-        url = app.get("url", "")
-        link = f"[直达商店]({url})" if url else "暂无"
-        lines.append(f"| {idx} | **{name}** | {artist} | {genre} | {link} |")
+        lines.append(f"| {idx} | **{name}** | {artist} | {genre} |")
 
     lines.extend([
         "",
@@ -289,14 +287,12 @@ def generate_markdown_snapshot(
             lines.append("")
             continue
 
-        lines.append("| 排名 | 应用名称 | 开发者 | App Store 链接 |")
-        lines.append("| :---: | :--- | :--- | :--- |")
+        lines.append("| 排名 | 应用名称 | 开发者 |")
+        lines.append("| :---: | :--- | :--- |")
         for idx, app in enumerate(apps, 1):
             name = app.get("name", "").replace("|", "-")
             artist = app.get("artist", "").replace("|", "-")
-            url = app.get("url", "")
-            link = f"[直达商店]({url})" if url else "暂无"
-            lines.append(f"| {idx} | **{name}** | {artist} | {link} |")
+            lines.append(f"| {idx} | **{name}** | {artist} |")
         lines.append("")
 
     if secondary_charts:
@@ -316,14 +312,12 @@ def generate_markdown_snapshot(
                 lines.append("")
                 continue
 
-            lines.append("| 排名 | 应用名称 | 开发者 | App Store 链接 |")
-            lines.append("| :---: | :--- | :--- | :--- |")
+            lines.append("| 排名 | 应用名称 | 开发者 |")
+            lines.append("| :---: | :--- | :--- |")
             for idx, app in enumerate(apps, 1):
                 name = app.get("name", "").replace("|", "-")
                 artist = app.get("artist", "").replace("|", "-")
-                url = app.get("url", "")
-                link = f"[直达商店]({url})" if url else "暂无"
-                lines.append(f"| {idx} | **{name}** | {artist} | {link} |")
+                lines.append(f"| {idx} | **{name}** | {artist} |")
             lines.append("")
 
     with open(file_path, mode="w", encoding="utf-8") as f:
