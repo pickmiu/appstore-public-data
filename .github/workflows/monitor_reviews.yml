@@ -2,8 +2,8 @@ name: Monitor App Reviews
 
 on:
   schedule:
-    # 每 30 分钟执行一次增量评价轮询，防止评价爆发时漏抓
-    - cron: '*/30 * * * *'
+    # 每 30 分钟执行一次增量评价轮询（错开整点/半点高峰，在 12 分和 42 分触发）
+    - cron: '12,42 * * * *'
   workflow_dispatch:
 
 concurrency:
