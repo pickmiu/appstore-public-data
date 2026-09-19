@@ -191,18 +191,22 @@ def monitor_app_reviews(
             print(f"  -> [{cc.upper()}] 成功拉取 Web 落地页高赞评价: {len(web_helpful)} 条")
             collected_reviews.extend(web_helpful)
 
-        # 2. 抓取 RSS 最新评价 (最多拉取 10 页，共 500 条)
-        page_counts = []
-        for p in range(1, max_pages_per_country + 1):
-            page_data = fetch_rss_page_reviews(app_id, app_name, country=cc_lower, page=p, sort_by="mostrecent")
-            if not page_data:
-                break
-            page_counts.append(f"P{p}({len(page_data)})")
-            collected_reviews.extend(page_data)
-            time.sleep(0.2)
+        # 2. 抓取 RSS 评价 (同时覆盖 mostrecent 与 mosthelpful 双维度，单排序最多 10 页 500 条)
+        for sort_mode in ("mostrecent", "mosthelpful"):
+            page_counts = []
+            for p in range(1, max_pages_per_country + 1):
+                page_data = fetch_rss_page_reviews(app_id, app_name, country=cc_lower, page=p, sort_by=sort_mode)
+                if not page_data:
+                    break
+                page_counts.append(f"P{p}({len(page_data)})")
+                if sort_mode == "mosthelpful":
+                    for item in page_data:
+                        item["is_most_helpful"] = True
+                collected_reviews.extend(page_data)
+                time.sleep(0.2)
 
-        status_str = " ".join(page_counts) if page_counts else "无新增数据"
-        print(f"  -> [{cc.upper()}|RSS最新]: {status_str}")
+            status_str = " ".join(page_counts) if page_counts else "无新增数据"
+            print(f"  -> [{cc.upper()}|RSS {sort_mode}]: {status_str}")
 
     print(f"  ✅ 本次抓取候选总量: {len(collected_reviews)} 条")
     return collected_reviews
