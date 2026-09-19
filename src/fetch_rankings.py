@@ -233,7 +233,7 @@ def generate_markdown_snapshot(
     time_str_cst = cst_time.strftime("%Y-%m-%d %H:%M:%S")
     time_str_utc = now_utc.strftime("%Y-%m-%d %H:%M:%S")
 
-    region_name = "中国区 (CN)" if region.lower() == "cn" else f"美国区 (US)" if region.lower() == "us" else region.upper()
+    region_name = "中国区 (CN)" if region.lower() == "cn" else "美国区 (US)" if region.lower() == "us" else region.upper()
 
     lines = [
         f"# App Store 纯应用榜单快照 - {region_name}",
@@ -246,7 +246,7 @@ def generate_markdown_snapshot(
         "---",
         "",
         "## 目录导航",
-        "- [🏆 免费主榜 Top 100 (纯应用)](#-免费主榜-top-100-纯应用)",
+        f"- [🏆 免费主榜 Top {len(main_apps)} (纯应用)](#-免费主榜-top-{len(main_apps)}-纯应用)",
         "- [📂 一级品类 Top 10](#-一级品类-top-10)",
     ]
 

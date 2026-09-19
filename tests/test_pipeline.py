@@ -43,6 +43,13 @@ class TestPipeline(unittest.TestCase):
         self.assertTrue(parsed.endswith("Z"))
         self.assertEqual(parsed, "2026-09-18T17:20:30Z")
 
+        # 支持包含毫秒/微秒的 Web SSR 格式与带时区格式
+        ms_str1 = "2026-09-18T00:03:55.000Z"
+        self.assertEqual(parse_standard_datetime(ms_str1), "2026-09-18T00:03:55Z")
+
+        ms_str2 = "2026-09-18T00:03:55.123456+08:00"
+        self.assertEqual(parse_standard_datetime(ms_str2), "2026-09-17T16:03:55Z")
+
     def test_fingerprint_determinism(self):
         fp1 = compute_fingerprint("6670324846", "UserA", "Great", "Nice app", "2026-09-18T10:00:00Z")
         fp2 = compute_fingerprint("6670324846", "UserA", "Great", "Nice app", "2026-09-18T23:59:59Z")
@@ -83,6 +90,15 @@ class TestPipeline(unittest.TestCase):
         rep2 = save_reviews_to_csv(batch_2, self.test_csv)
         self.assertEqual(rep2["added_count"], 1)
         self.assertEqual(rep2["skipped_count"], 1)
+        self.assertEqual(rep2["total_records"], 3)
+
+        # review_id 优先去重测试：即使标题有轻微差异，只要 review_id 相同也能精准去重
+        batch_3 = [
+            {"review_id": "2", "app_id": "100", "author": "U2", "title": "T2 (Web端格式不同)", "content": "C2", "review_date": "2026-09-18T10:00:00Z"}
+        ]
+        rep3 = save_reviews_to_csv(batch_3, self.test_csv)
+        self.assertEqual(rep3["added_count"], 0)
+        self.assertEqual(rep3["skipped_count"], 1)
         self.assertEqual(rep2["total_records"], 3)
 
     def test_pruning_and_helpful_protection(self):

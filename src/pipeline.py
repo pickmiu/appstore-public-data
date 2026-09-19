@@ -72,6 +72,8 @@ def parse_standard_datetime(date_val: Any) -> str:
         return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     
     s = str(date_val).strip()
+    # 剥离毫秒/微秒部分 (如 .000 或 .123456)，确保统一匹配秒级 ISO 标准
+    s = re.sub(r"\.\d+", "", s)
     # 尝试解析常见时间格式
     for fmt in (
         "%Y-%m-%dT%H:%M:%S%z",
@@ -165,30 +167,48 @@ def clean_review_record(raw: Dict[str, Any], default_source: str = "itunes_rss")
     }
 
 
-def load_existing_fingerprints(csv_path: str) -> Set[str]:
-    """快速读取已存在 CSV 文件的 fingerprint 集合（O(1) 查重）"""
+def load_existing_review_keys(csv_path: str) -> Tuple[Set[str], Set[str]]:
+    """快速读取已存在 CSV 文件的 (review_id 集合, fingerprint 集合)"""
     if not os.path.exists(csv_path):
-        return set()
+        return set(), set()
 
+    review_ids = set()
     fingerprints = set()
     try:
         with open(csv_path, mode="r", encoding="utf-8-sig", newline="") as f:
             reader = csv.reader(f)
             headers = next(reader, None)
             if not headers:
-                return set()
+                return set(), set()
+            try:
+                id_idx = headers.index("review_id")
+            except ValueError:
+                id_idx = -1
             try:
                 fp_idx = headers.index("fingerprint")
             except ValueError:
                 fp_idx = 0
+
             for row in reader:
-                if row and len(row) > fp_idx:
+                if not row:
+                    continue
+                if id_idx != -1 and len(row) > id_idx:
+                    rid = row[id_idx].strip()
+                    if rid:
+                        review_ids.add(rid)
+                if len(row) > fp_idx:
                     fp = row[fp_idx].strip()
                     if fp:
                         fingerprints.add(fp)
     except Exception as e:
-        print(f"[警告] 读取 CSV 指纹集合异常: {e}")
-    return fingerprints
+        print(f"[警告] 读取 CSV 索引集合异常: {e}")
+    return review_ids, fingerprints
+
+
+def load_existing_fingerprints(csv_path: str) -> Set[str]:
+    """快速读取已存在 CSV 文件的 fingerprint 集合（保留向后兼容）"""
+    _, fps = load_existing_review_keys(csv_path)
+    return fps
 
 
 def save_reviews_to_csv(
@@ -197,7 +217,7 @@ def save_reviews_to_csv(
     default_source: str = "itunes_rss"
 ) -> Dict[str, Any]:
     """
-    统一增量保存入口：清洗 -> 指纹去重 -> 增量追加写入 CSV
+    统一增量保存入口：清洗 -> ID/指纹多重去重 -> 增量追加写入 CSV
 
     :param raw_reviews: 待保存的评价原始数据
     :param output_path: 输出 CSV 路径
@@ -208,7 +228,7 @@ def save_reviews_to_csv(
     if dir_name:
         os.makedirs(dir_name, exist_ok=True)
 
-    existing_fps = load_existing_fingerprints(output_path)
+    existing_ids, existing_fps = load_existing_review_keys(output_path)
     file_exists = os.path.exists(output_path) and os.path.getsize(output_path) > 0
 
     new_records = []
@@ -217,11 +237,19 @@ def save_reviews_to_csv(
 
     for raw in raw_reviews:
         cleaned = clean_review_record(raw, default_source=default_source)
+        rev_id = str(cleaned.get("review_id", "")).strip()
         fp = cleaned["fingerprint"]
+
+        # 优先按 review_id 查重（解决跨渠道清洗微差导致的重复）；无 review_id 时回退至内容指纹查重
+        if rev_id and rev_id in existing_ids:
+            skipped_count += 1
+            continue
         if fp in existing_fps:
             skipped_count += 1
             continue
-            
+
+        if rev_id:
+            existing_ids.add(rev_id)
         existing_fps.add(fp)
         new_records.append(cleaned)
         rating_counts[cleaned["rating"]] = rating_counts.get(cleaned["rating"], 0) + 1

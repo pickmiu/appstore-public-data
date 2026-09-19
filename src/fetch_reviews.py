@@ -83,8 +83,7 @@ def fetch_web_featured_reviews(app_id: str, app_name: str, country: str = "us") 
                                 })
                         break
         except Exception as e:
-            # 忽略非核心视图报错
-            pass
+            print(f"[{country.upper()}|Web] 拉取/解析落地页精选评价异常 ({url}): {e}", file=sys.stderr)
 
     return featured_reviews
 
@@ -109,6 +108,7 @@ def fetch_rss_page_reviews(
     ]
 
     for attempt in range(max_retries + 1):
+        last_error = None
         for url in url_patterns:
             req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
             try:
@@ -155,16 +155,16 @@ def fetch_rss_page_reviews(
             except urllib.error.HTTPError as e:
                 if e.code in (400, 404):
                     return []
-                if attempt < max_retries:
-                    time.sleep(1.0 * (attempt + 1))
-                    continue
-                print(f"[{country.upper()}|{sort_by}] 第 {page} 页 HTTP 错误: {e.code}", file=sys.stderr)
-                return []
+                last_error = e
             except Exception as e:
-                if attempt < max_retries:
-                    time.sleep(1.0 * (attempt + 1))
-                    continue
-                return []
+                last_error = e
+
+        # 若当轮尝试所有 URL 模式均未获取成功，且未到最大重试次数，执行单次退避休眠
+        if attempt < max_retries:
+            time.sleep(1.0 * (attempt + 1))
+        elif last_error:
+            print(f"[{country.upper()}|{sort_by}] 第 {page} 页请求重试耗尽: {last_error}", file=sys.stderr)
+
     return []
 
 

@@ -30,6 +30,8 @@ rankings:
   exclude_games: true
 
   # 抓取深度限制
+  # 注：Apple 官方公开 Top Free Feed API 单次物理硬上限为 100 款 (设置大于 100 无效)。
+  # 启用 exclude_games 过滤游戏后，实际纯应用数量通常在 95~98 款之间。
   main_chart_limit: 100        # 主榜单前 N 名 (纯应用榜，自动过滤游戏)
   primary_genre_limit: 10      # 一级品类前 N 名 (默认 10)
   secondary_genre_limit: 5     # 二级品类前 N 名 (默认 5)

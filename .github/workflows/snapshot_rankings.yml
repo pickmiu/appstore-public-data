@@ -6,6 +6,10 @@ on:
     - cron: '0 16 * * *'
   workflow_dispatch:
 
+concurrency:
+  group: snapshot-rankings
+  cancel-in-progress: false
+
 permissions:
   contents: write
 
@@ -39,5 +43,6 @@ jobs:
             echo "No ranking changes to commit."
           else
             git commit -m "chore(data): daily App Store rankings snapshot [skip ci]"
+            git pull --rebase origin main
             git push
           fi

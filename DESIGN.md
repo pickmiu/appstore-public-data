@@ -17,7 +17,7 @@
 ```mermaid
 flowchart TD
     subgraph GitHub_Actions_Runner [GitHub Actions 免费 Runner 环境]
-        A[定时触发调度\n- 评价: 每 3 小时\n- 榜单: 每天 00:00] --> B[读取单一配置文件\nconfig.yaml]
+        A[定时触发调度\n- 评价: 每 30 分钟 (48次/天)\n- 榜单: 每天 00:00] --> B[读取单一配置文件\nconfig.yaml]
         
         B --> C1[评价监控引擎\nsrc/fetch_reviews.py]
         B --> C2[榜单快照引擎\nsrc/fetch_rankings.py]
@@ -155,10 +155,10 @@ rankings:
 * **触发时间**：每天北京时间 00:00。对应 GitHub Actions 的 UTC 时间为前一天的 **16:00**（Cron: `0 16 * * *`）。
 
 ### 5.2 数据来源选型与游戏过滤机制
-* **主榜单 Top 100 (纯应用)**：
+* **主榜单 (纯应用)**：
   - 采用 Apple Media Services 现代 Feed API：
-    `https://rss.applemarketingtools.com/api/v2/{region}/apps/top-free/200/apps.json`
-  - **游戏过滤算法（Exclude Games Filter）**：因官方 Top Free 总榜混合了手游与普通应用，引擎在解析时自动识别 `genres` 或 `primaryGenreName`，**剔除所有属于 "Games" (ID: 6014) 的项目，并顺延补齐至前 100 名**，确保快照呈现的是纯粹的应用生态排行。
+    `https://rss.applemarketingtools.com/api/v2/{region}/apps/top-free/100/apps.json`
+  - **API 深度与游戏过滤说明**：Apple 官方公开 Top Free Feed 单次物理硬上限为 100 款。解析时自动识别 `genres` 或 `primaryGenreName` 剔除所有属于 "Games" (ID: 6014) 的项目，生成纯粹的应用生态排行（通常为 95~98 款应用）。目录导航锚点与标题根据实际数量动态对应，杜绝失效。
 * **一级品类 Top 10**：
   - 采用 iTunes Genre API：
     `https://itunes.apple.com/{region}/rss/topfreeapplications/limit=10/genre={genre_id}/json`
@@ -208,7 +208,7 @@ rankings:
 遵循大道至简与客观求真的原则，梳理该体系的关键利弊与优化策略：
 
 ### 7.1 Git 仓库存储时序数据的问题与优化
-* **弊端**：Git 的底层是为源代码设计的，而非数据库。高频变更同一个 CSV 文件（每 3 小时一次 commit）会在 `.git` 中沉淀大量快照 blob，导致长期下来 `git clone` 速度变慢。
+* **弊端**：Git 的底层是为源代码设计的，而非数据库。高频变更同一个 CSV 文件（每 30 分钟轮询，有新数据即 commit）会在 `.git` 中沉淀大量快照 blob，导致长期下来 `git clone` 速度变慢。
 * **优化解法**：
   1. **严格限制单文件上限**：设定 180 天与 10,000 条上限，使单应用 CSV 大小锁定在 2~3MB 以内，半年物理体积增长可控在几十 MB；
   2. **榜单按天分文件**：榜单快照每天独立生成一个文件，历史文件不修改只新增，Git 能高效压缩，过期后直接删除；
