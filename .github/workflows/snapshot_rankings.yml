@@ -1,0 +1,43 @@
+name: Daily Rankings Snapshot
+
+on:
+  schedule:
+    # 每天北京时间 00:00 (对应 UTC 16:00 前一天)
+    - cron: '0 16 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  rankings:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Rankings Snapshot Pipeline
+        run: |
+          python3 main.py --mode rankings
+
+      - name: Commit and Push Changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add rankings/
+          if git diff --staged --quiet; then
+            echo "No ranking changes to commit."
+          else
+            git commit -m "chore(data): daily App Store rankings snapshot [skip ci]"
+            git push
+          fi
