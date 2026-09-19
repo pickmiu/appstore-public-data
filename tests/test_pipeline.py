@@ -107,14 +107,6 @@ class TestPipeline(unittest.TestCase):
         self.assertEqual(res["pruned_count"], 1)
         self.assertEqual(res["helpful_retained"], 1)
 
-        # 检查配套生成的 Markdown 概览文件
-        md_file = os.path.splitext(self.test_csv)[0] + ".md"
-        self.assertTrue(os.path.exists(md_file))
-        with open(md_file, "r", encoding="utf-8") as f:
-            content = f.read()
-            self.assertIn("评价监控概览与分析", content)
-            self.assertIn("Old Helpful", content)
-
     def test_game_item_filter(self):
         # 游戏品类 ID 6014 或名称包含游戏
         self.assertTrue(is_game_item(["6014"], ["Games"]))

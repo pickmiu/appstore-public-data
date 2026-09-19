@@ -27,7 +27,7 @@ flowchart TD
             D1 --> D2[文本清洗 & 字段标准化]
             D2 --> D3[SHA256 内容指纹去重]
             D3 --> D4[生命周期裁剪\n- 180天保留\n- 1w条上限\n- mostHelpful 永久保护]
-            D4 --> E1[追加/更新 CSV & MD 概览\ndata/reviews_{app_id}.*]
+            D4 --> E1[追加/更新 CSV\ndata/reviews_{app_id}.csv]
         end
         
         subgraph Ranking_Pipeline [榜单处理管道]

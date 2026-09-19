@@ -323,9 +323,6 @@ def prune_reviews_data(
     total_after = len(combined_records)
     pruned_count = total_before - total_after
 
-    # 自动生成/更新配套 Markdown 概览文件
-    generate_review_summary_md(csv_path, combined_records)
-
     return {
         "csv_path": csv_path,
         "total_before": total_before,
@@ -334,77 +331,3 @@ def prune_reviews_data(
         "helpful_retained": len(helpful_pool),
         "ordinary_retained": len(ordinary_retained)
     }
-
-
-def generate_review_summary_md(csv_path: str, records: List[Dict[str, Any]]) -> str:
-    """
-    根据当前 CSV 数据自动生成配套 Markdown 概览文件 (data/reviews_{app_id}.md)
-    """
-    md_path = os.path.splitext(csv_path)[0] + ".md"
-    if not records:
-        return md_path
-
-    app_id = records[0].get("app_id", "")
-    app_name = records[0].get("app_name", app_id)
-    total = len(records)
-
-    rating_counts = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
-    helpful_list = []
-
-    for r in records:
-        try:
-            star = int(r.get("rating", 5))
-            if star in rating_counts:
-                rating_counts[star] += 1
-        except (ValueError, TypeError):
-            pass
-
-        if str(r.get("is_most_helpful", "")).lower() in ("true", "1") and len(helpful_list) < 15:
-            helpful_list.append(r)
-
-    latest_date = records[0].get("review_date", "") if records else ""
-    earliest_date = records[-1].get("review_date", "") if records else ""
-
-    md_content = [
-        f"# {app_name} 评价监控概览与分析",
-        "",
-        f"- **App ID**: `{app_id}`",
-        f"- **有效评价总数**: {total:,} 条",
-        f"- **数据覆盖周期**: `{earliest_date[:10]}` 至 `{latest_date[:10]}`",
-        f"- **数据源文件**: [{os.path.basename(csv_path)}]({os.path.basename(csv_path)})",
-        "",
-        "## 评分分布统计",
-        "",
-        "| 星级 | 评价条数 | 占比 | 分布条 |",
-        "| :--- | :--- | :--- | :--- |"
-    ]
-
-    for star in (5, 4, 3, 2, 1):
-        cnt = rating_counts[star]
-        pct = (cnt / total * 100) if total > 0 else 0
-        bar_len = int(pct / 4)
-        bar = "█" * bar_len
-        md_content.append(f"| ⭐ {star} 星 | {cnt:,} 条 | {pct:.1f}% | `{bar:<25}` |")
-
-    if helpful_list:
-        md_content.extend([
-            "",
-            "## 核心精选评价（最有帮助）",
-            ""
-        ])
-        for idx, item in enumerate(helpful_list, 1):
-            title = item.get("title", "")
-            author = item.get("author", "用户")
-            date = item.get("review_date", "")[:10]
-            star = "⭐" * int(item.get("rating", 5))
-            content = item.get("content", "").replace("\n", " ")
-            if len(content) > 150:
-                content = content[:150] + "..."
-            md_content.append(f"{idx}. **[{star}] {title}** - *{author} ({date})*")
-            md_content.append(f"   > {content}")
-            md_content.append("")
-
-    with open(md_path, mode="w", encoding="utf-8") as f:
-        f.write("\n".join(md_content) + "\n")
-
-    return md_path

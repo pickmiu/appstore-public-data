@@ -36,8 +36,7 @@ appstore-public-data/
 │   ├── fetch_reviews.py           # 评价抓取与增量入库模块
 │   └── fetch_rankings.py          # 榜单抓取与快照生成模块
 ├── data/                          # 评价数据存储目录
-│   ├── reviews_{app_id}.csv       # 单个应用评价明细 (UTF-8 BOM 编码，Excel 友好)
-│   └── reviews_{app_id}.md        # 单个应用评价概览与口碑分布
+│   └── reviews_{app_id}.csv       # 单个应用评价明细 (UTF-8 BOM 编码，Excel 友好)
 └── rankings/                      # 每日榜单快照目录 (保留 180 天)
     ├── 2026-09-19_cn.md           # 中国区纯应用主榜 Top100 + 一级应用品类前 10
     ├── 2026-09-19_us.md           # 美区纯应用主榜 Top100 + 一级应用品类前 10
