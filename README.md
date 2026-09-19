@@ -102,7 +102,7 @@ python3 main.py --mode all
 
 本仓库配置了两个自动调度工作流：
 1. **评价监控**（`monitor_reviews.yml`）：每 30 分钟轮询一次，增量提取新评价并基于指纹去重存入 CSV。若单次拉取触及 500 条上限（第 10 页满载）且新增较大，会自动触发 GitHub Actions `::warning` 批注与 `$GITHUB_STEP_SUMMARY` 满载预警，防止爆发时漏抓。
-2. **榜单快照**（`snapshot_rankings.yml`）：每天北京时间 00:00（UTC 16:00）运行，抓取各地区各品类榜单并清理半年前旧快照。
+2. **榜单快照**（`snapshot_rankings.yml`）：每天北京时间 00:15（UTC 16:15）错峰运行，抓取各地区各品类榜单并清理半年前旧快照。
 
 工作流运行后若产生数据变动，将由系统自动完成 `git commit` 并同步推送至当前仓库。
 

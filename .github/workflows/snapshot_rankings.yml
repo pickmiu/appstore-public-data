@@ -2,8 +2,8 @@ name: Daily Rankings Snapshot
 
 on:
   schedule:
-    # 每天北京时间 00:00 (对应 UTC 16:00 前一天)
-    - cron: '0 16 * * *'
+    # 每天北京时间 00:15 错峰执行（对应 UTC 16:15 前一天）
+    - cron: '15 16 * * *'
   workflow_dispatch:
 
 concurrency:
