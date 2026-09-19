@@ -82,18 +82,16 @@ def fetch_rss_page_reviews(
     app_name: str,
     country: str,
     page: int = 1,
-    sort_by: str = "mostRecent",
+    sort_by: str = "mostrecent",
     max_retries: int = 2
 ) -> List[Dict[str, Any]]:
     """
     通过 Apple iTunes RSS 抓取指定国家的一页最新评价
     带有自动指数退避重试 (Backoff Retry)
+    注：Apple 服务端严格区分大小写，必须使用全小写 `sortby=mostrecent`，且必须显式包含 `page={page}`
     """
-    # Apple RSS URL 格式
-    if page > 1:
-        url = f"https://itunes.apple.com/{country}/rss/customerreviews/page={page}/id={app_id}/sortBy={sort_by}/json"
-    else:
-        url = f"https://itunes.apple.com/{country}/rss/customerreviews/id={app_id}/sortBy={sort_by}/json"
+    sort_param = sort_by.lower()
+    url = f"https://itunes.apple.com/{country}/rss/customerreviews/page={page}/id={app_id}/sortby={sort_param}/json"
 
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
 
@@ -159,12 +157,12 @@ def monitor_app_reviews(
     app_id: str,
     app_name: str,
     countries: List[str],
-    max_pages_per_country: int = 3
+    max_pages_per_country: int = 10
 ) -> List[Dict[str, Any]]:
     """
     对指定应用的所有目标国家进行增量评价监控：
-    1. 抓取 Web 落地页最有帮助 (Most Helpful) 评价
-    2. 抓取 RSS 最新评价 (mostRecent)
+    1. 抓取 Web 落地页最有帮助 (Most Helpful) 评价 (通常为置顶 8 条)
+    2. 抓取 RSS 最新评价 (mostrecent，Apple 单个国家公开接口上限 10 页共 500 条)
     """
     print(f"\n==================================================")
     print(f"🚀 开始抓取应用评价: {app_name} (ID: {app_id})")
@@ -181,15 +179,15 @@ def monitor_app_reviews(
             print(f"  -> [{cc.upper()}] 成功拉取 Web 落地页高赞评价: {len(web_helpful)} 条")
             collected_reviews.extend(web_helpful)
 
-        # 2. 抓取 RSS 最新评价
+        # 2. 抓取 RSS 最新评价 (最多拉取 10 页，共 500 条)
         page_counts = []
         for p in range(1, max_pages_per_country + 1):
-            page_data = fetch_rss_page_reviews(app_id, app_name, country=cc_lower, page=p, sort_by="mostRecent")
+            page_data = fetch_rss_page_reviews(app_id, app_name, country=cc_lower, page=p, sort_by="mostrecent")
             if not page_data:
                 break
             page_counts.append(f"P{p}({len(page_data)})")
             collected_reviews.extend(page_data)
-            time.sleep(0.3)
+            time.sleep(0.2)
 
         status_str = " ".join(page_counts) if page_counts else "无新增数据"
         print(f"  -> [{cc.upper()}|RSS最新]: {status_str}")
