@@ -57,10 +57,19 @@ monitored_apps:
     name: "DeepSeek"
     countries: ["cn", "us"]
 
-  # --- E-commerce & Global Trade (PDD Ecosystem / Domestic & Cross-border) ---
+  # --- E-commerce, Social & Global Trade (Domestic & Cross-border) ---
+  - id: "387682726"
+    name: "淘宝"
+    countries: ["cn"]
   - id: "1044283059"
     name: "拼多多"
     countries: ["cn"]
+  - id: "1012871328"
+    name: "得物"
+    countries: ["cn"]
+  - id: "741292507"
+    name: "小红书"
+    countries: ["cn", "us", "hk", "my", "sg"]
   - id: "1641486558"
     name: "Temu"
     countries: ["us", "gb", "de", "jp", "kr", "mx"]
