@@ -372,8 +372,14 @@ def run_reviews_pipeline(config: Dict[str, Any]) -> List[Dict[str, Any]]:
         # 1. Fetch multi-channel reviews and overflow stats
         raw_reviews, overflow_stats = monitor_app_reviews(app_id, app_name, countries, return_stats=True)
 
-        # 2. Incremental save with fingerprint deduplication
-        report = save_reviews_to_csv(raw_reviews, output_csv, default_source="itunes_rss")
+        # 2. Incremental save with fingerprint deduplication and retention pre-filtering
+        report = save_reviews_to_csv(
+            raw_reviews,
+            output_csv,
+            default_source="itunes_rss",
+            retention_days=retention_days,
+            keep_all_helpful=keep_all_helpful
+        )
 
         # 3. Check overflow and missed reviews risk
         warn_msg = check_overflow_risk(
@@ -412,7 +418,9 @@ def run_reviews_pipeline(config: Dict[str, Any]) -> List[Dict[str, Any]]:
         print(f"📁 Target file: data/{filename}")
         print(f"📥 Candidate reviews: {report['input_count']}")
         print(f"✨ Valid added: {report['added_count']}")
-        print(f"⏭️ Fingerprint deduplicated: {report['skipped_count']}")
+        print(f"⏭️ Fingerprint deduplicated: {report.get('dedup_skipped_count', report['skipped_count'])}")
+        if report.get("expired_skipped_count", 0) > 0:
+            print(f"⏳ Expired pre-filtered: {report['expired_skipped_count']}")
         print(f"✂️ Lifecycle pruned: Removed {prune_report.get('pruned_count', 0)} expired reviews")
         print(f"📦 Total retained: {prune_report.get('total_after', 0)} (Featured protected: {prune_report.get('helpful_retained', 0)})")
         if overflow_stats.get("hit_ceiling"):

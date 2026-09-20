@@ -124,6 +124,29 @@ class TestPipeline(unittest.TestCase):
         self.assertEqual(res["pruned_count"], 1)
         self.assertEqual(res["helpful_retained"], 1)
 
+    def test_retention_pre_filtering_in_save(self):
+        now = datetime.now(timezone.utc)
+        date_recent = now.strftime("%Y-%m-%dT%H:%M:%SZ")
+        date_old = (now - timedelta(days=200)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        records = [
+            {"review_id": "201", "app_id": "300", "author": "U1", "title": "Recent", "content": "Recent review", "review_date": date_recent, "is_most_helpful": False},
+            {"review_id": "202", "app_id": "300", "author": "U2", "title": "Expired Ord", "content": "Old review", "review_date": date_old, "is_most_helpful": False},
+            {"review_id": "203", "app_id": "300", "author": "U3", "title": "Expired Helpful", "content": "Old helpful", "review_date": date_old, "is_most_helpful": True},
+        ]
+        # Ingestion with retention_days=180:
+        # review 202 (expired ordinary) must be skipped directly without entering CSV
+        # review 201 (recent) and 203 (expired helpful) must be ingested
+        rep = save_reviews_to_csv(records, self.test_csv, retention_days=180, keep_all_helpful=True)
+        self.assertEqual(rep["added_count"], 2)
+        self.assertEqual(rep["expired_skipped_count"], 1)
+        self.assertEqual(rep["skipped_count"], 1)
+
+        # Subsequent pruning should prune 0 records because expired ordinary reviews were already filtered
+        prune_rep = prune_reviews_data(self.test_csv, retention_days=180, max_count=10000, keep_all_helpful=True)
+        self.assertEqual(prune_rep["pruned_count"], 0)
+        self.assertEqual(prune_rep["total_after"], 2)
+
     def test_game_item_filter(self):
         # Game genre ID 6014 or containing game keywords
         self.assertTrue(is_game_item(["6014"], ["Games"]))
@@ -191,6 +214,7 @@ class TestPipeline(unittest.TestCase):
             {"name": "DeepSeek", "added": 78, "pruned": 0},
             {"name": "豆包", "added": 24, "pruned": 0},
             {"name": "Grok AI", "added": 21, "pruned": 0},
+            {"name": "可灵AI (国内版)", "added": 0, "pruned": 0},  # Filtered expired app, no actual changes
         ]
         msg = build_reviews_commit_message(stats_many)
         lines = msg.split("\n")
@@ -203,6 +227,7 @@ class TestPipeline(unittest.TestCase):
         self.assertIn("- ChatGPT: +110", msg)
         self.assertIn("- DeepSeek: +78", msg)
         self.assertIn("- 通义千问: +10", msg)
+        self.assertNotIn("可灵AI", msg)
 
         # 2. Single app update
         stats_single = [{"name": "ChatGPT", "added": 15, "pruned": 0}]

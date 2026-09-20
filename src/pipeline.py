@@ -13,7 +13,7 @@ import re
 import csv
 import hashlib
 from datetime import datetime, timezone, timedelta
-from typing import List, Dict, Any, Set, Tuple
+from typing import List, Dict, Any, Set, Tuple, Optional
 
 # Standardized CSV Header Definition
 CSV_COLUMNS = [
@@ -215,25 +215,36 @@ def load_existing_fingerprints(csv_path: str) -> Set[str]:
 def save_reviews_to_csv(
     raw_reviews: List[Dict[str, Any]],
     output_path: str,
-    default_source: str = "itunes_rss"
+    default_source: str = "itunes_rss",
+    retention_days: Optional[int] = None,
+    keep_all_helpful: bool = True
 ) -> Dict[str, Any]:
     """
-    Unified incremental save: Clean -> Multi-tier deduplication -> Append to CSV.
+    Unified incremental save: Clean -> Retention pre-filter -> Deduplication -> Append to CSV.
 
     :param raw_reviews: List of raw review dictionaries to save
     :param output_path: Destination CSV filepath
     :param default_source: Default source identifier
+    :param retention_days: Optional retention cutoff in days (ordinary reviews older than this are skipped)
+    :param keep_all_helpful: Whether to exempt most helpful / featured reviews from retention cutoff
     :return: Operation statistics summary dictionary
     """
     dir_name = os.path.dirname(output_path)
     if dir_name:
         os.makedirs(dir_name, exist_ok=True)
 
+    cutoff_iso = None
+    if retention_days is not None and retention_days > 0:
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=retention_days)
+        cutoff_iso = cutoff_date.strftime("%Y-%m-%dT%H:%M:%SZ")
+
     existing_ids, existing_fps = load_existing_review_keys(output_path)
     file_exists = os.path.exists(output_path) and os.path.getsize(output_path) > 0
 
     new_records = []
     skipped_count = 0
+    dedup_skipped_count = 0
+    expired_skipped_count = 0
     rating_counts = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
 
     for raw in raw_reviews:
@@ -241,11 +252,21 @@ def save_reviews_to_csv(
         rev_id = str(cleaned.get("review_id", "")).strip()
         fp = cleaned["fingerprint"]
 
-        # Prioritize review_id deduplication; fallback to content fingerprint
+        # 1. Pre-filter expired ordinary reviews before ingestion to avoid phantom adds and immediate pruning churn
+        if cutoff_iso and not (keep_all_helpful and cleaned.get("is_most_helpful")):
+            r_date = cleaned.get("review_date", "")
+            if r_date and r_date < cutoff_iso:
+                expired_skipped_count += 1
+                skipped_count += 1
+                continue
+
+        # 2. Prioritize review_id deduplication; fallback to content fingerprint
         if rev_id and rev_id in existing_ids:
+            dedup_skipped_count += 1
             skipped_count += 1
             continue
         if fp in existing_fps:
+            dedup_skipped_count += 1
             skipped_count += 1
             continue
 
@@ -270,6 +291,8 @@ def save_reviews_to_csv(
         "input_count": len(raw_reviews),
         "added_count": len(new_records),
         "skipped_count": skipped_count,
+        "dedup_skipped_count": dedup_skipped_count,
+        "expired_skipped_count": expired_skipped_count,
         "total_records": len(existing_fps),
         "batch_ratings": rating_counts
     }
