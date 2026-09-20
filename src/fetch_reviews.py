@@ -272,6 +272,16 @@ def monitor_app_reviews(
     return collected_reviews
 
 
+def get_review_filename(app_id: str, app_name: str, countries: Optional[List[str]] = None) -> str:
+    """
+    生成规范的评价 CSV 文件名，格式：reviews_{app_id}_{app_name}_{region}.csv
+    例如：reviews_6448311069_ChatGPT_us.csv
+    """
+    safe_name = re.sub(r"[^\w\u4e00-\u9fff\-]+", "_", app_name).strip("_") if app_name else app_id
+    region_str = "_".join([c.strip().lower() for c in countries]) if countries else "all"
+    return f"reviews_{app_id}_{safe_name}_{region_str}.csv"
+
+
 def run_reviews_pipeline(config: Dict[str, Any]) -> None:
     """
     根据配置全流程执行应用评价监控、入库与生命周期裁剪，并触发满载告警
@@ -286,7 +296,7 @@ def run_reviews_pipeline(config: Dict[str, Any]) -> None:
 
     monitored_apps = config.get("monitored_apps", [])
     if not monitored_apps:
-        print("[提示] config.yaml 中未配置 monitored_apps，跳过评价抓取。")
+        print("⚠️ 未配置监控应用，跳过评价监控流程。")
         return
 
     data_dir = os.path.join(os.getcwd(), "data")
@@ -300,7 +310,13 @@ def run_reviews_pipeline(config: Dict[str, Any]) -> None:
         if not app_id:
             continue
 
-        output_csv = os.path.join(data_dir, f"reviews_{app_id}.csv")
+        filename = get_review_filename(app_id, app_name, countries)
+        output_csv = os.path.join(data_dir, filename)
+
+        # 兼容性平滑迁移：若存在旧版命名 reviews_{app_id}.csv 且新文件尚不存在，自动重命名继承历史数据
+        legacy_csv = os.path.join(data_dir, f"reviews_{app_id}.csv")
+        if os.path.exists(legacy_csv) and not os.path.exists(output_csv):
+            os.rename(legacy_csv, output_csv)
 
         # 1. 抓取多渠道评价候选与满载统计
         raw_reviews, overflow_stats = monitor_app_reviews(app_id, app_name, countries, return_stats=True)
@@ -332,7 +348,7 @@ def run_reviews_pipeline(config: Dict[str, Any]) -> None:
         print("\n" + "-" * 50)
         print(f"📊 {app_name} 数据统计报告")
         print("-" * 50)
-        print(f"📁 目标存储文件: data/reviews_{app_id}.csv")
+        print(f"📁 目标存储文件: data/{filename}")
         print(f"📥 本次抓取候选: {report['input_count']} 条")
         print(f"✨ 增量有效入库: {report['added_count']} 条")
         print(f"⏭️ 自动指纹去重: {report['skipped_count']} 条")

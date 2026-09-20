@@ -21,7 +21,7 @@ from src.pipeline import (
     CSV_COLUMNS
 )
 from src.fetch_rankings import is_game_item, prune_historical_rankings
-from src.fetch_reviews import check_overflow_risk
+from src.fetch_reviews import check_overflow_risk, get_review_filename
 
 
 class TestPipeline(unittest.TestCase):
@@ -165,6 +165,23 @@ class TestPipeline(unittest.TestCase):
         # 3. 未触碰 500 条上限 (即使有少量新增) -> 不告警
         msg3 = check_overflow_risk("Muse", "6760173601", added_count=200, hit_ceiling=False, threshold=300)
         self.assertIsNone(msg3)
+
+    def test_get_review_filename(self):
+        # 单国家英文名
+        fn1 = get_review_filename("6448311069", "ChatGPT", ["us"])
+        self.assertEqual(fn1, "reviews_6448311069_ChatGPT_us.csv")
+
+        # 带空格多词
+        fn2 = get_review_filename("6473753684", "Claude by Anthropic", ["us"])
+        self.assertEqual(fn2, "reviews_6473753684_Claude_by_Anthropic_us.csv")
+
+        # 中文与括号
+        fn3 = get_review_filename("6738049229", "Kling AI (可灵国际版)", ["us"])
+        self.assertEqual(fn3, "reviews_6738049229_Kling_AI_可灵国际版_us.csv")
+
+        # 多国家
+        fn4 = get_review_filename("6737597349", "DeepSeek", ["cn", "us"])
+        self.assertEqual(fn4, "reviews_6737597349_DeepSeek_cn_us.csv")
 
 
 if __name__ == "__main__":
