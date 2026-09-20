@@ -98,11 +98,17 @@ python3 main.py --mode all
 
 ---
 
-## GitHub Actions 自动化机制
+## 自动化调度机制
 
-本仓库配置了两个自动调度工作流：
-1. **评价监控**（`monitor_reviews.yml`）：每 30 分钟轮询一次，增量提取新评价并基于指纹去重存入 CSV。若单次拉取触及 500 条上限（第 10 页满载）且新增较大，会自动触发 GitHub Actions `::warning` 批注与 `$GITHUB_STEP_SUMMARY` 满载预警，防止爆发时漏抓。
-2. **榜单快照**（`snapshot_rankings.yml`）：每天北京时间 00:15（UTC 16:15）错峰运行，抓取各地区各品类榜单并清理半年前旧快照。
+为彻底杜绝 GitHub Actions 原生 Cron 带来的高延迟与任务丢弃问题，系统采用 **Cloudflare Workers (Cron Triggers)** 外部高精调度 + **GitHub Actions (`workflow_dispatch`)** 云端执行的最佳实践：
+
+1. **评价监控**（`monitor_reviews.yml`）：
+   - **调度频率**：每 30 分钟准时轮询一次（0 延迟、0 丢弃）；
+   - **工作逻辑**：增量提取新评价并基于指纹去重存入 CSV。若单次拉取触及 500 条上限（第 10 页满载）且新增较大，自动触发 GitHub Actions `::warning` 批注与 `$GITHUB_STEP_SUMMARY` 满载预警，防止爆发漏抓。
+2. **榜单快照**（`snapshot_rankings.yml`）：
+   - **调度频率**：每天北京时间 00:15 准时触发一次；
+   - **工作逻辑**：抓取中美两区纯应用主榜单与一级品类榜单，生成规范 Markdown 并自动清理半年前旧快照；
+   - **幂等性保障**：快照文件以北京时间日期命名（`rankings/YYYY-MM-DD_{region}.md`），若在同一天内多次重复触发，系统会自动原地覆盖当天的快照文件，更新其中的具体生成时间戳与最新排名，**绝对不会生成重复副本或产生脏数据**。
 
 工作流运行后若产生数据变动，将由系统自动完成 `git commit` 并同步推送至当前仓库。
 
