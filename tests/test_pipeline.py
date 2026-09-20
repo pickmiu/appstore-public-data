@@ -223,6 +223,29 @@ class TestPipeline(unittest.TestCase):
         msg_empty = build_reviews_commit_message(stats_empty)
         self.assertEqual(msg_empty, "chore(data): auto-update App Store reviews [skip ci]")
 
+    def test_nul_byte_resilience(self):
+        # Verify clean_review_record strips NUL bytes
+        raw_nul = {
+            "app_id": "123\x00456",
+            "app_name": "App\x00Name",
+            "country": "cn\x00",
+            "review_id": "rev\x001",
+            "author": "User\x00A",
+            "title": "Bad\x00Title",
+            "content": "Body\x00Text",
+            "version": "1.0\x00",
+            "review_date": "2026-09-18T10:00:00Z"
+        }
+        cleaned = clean_review_record(raw_nul)
+        self.assertEqual(cleaned["app_id"], "123456")
+        self.assertNotIn("\x00", cleaned["content"])
+        self.assertNotIn("\x00", cleaned["original_content"])
+
+        # Test CSV saving and pruning resilience with NUL bytes
+        save_reviews_to_csv([cleaned], self.test_csv)
+        report = prune_reviews_data(self.test_csv, retention_days=180, max_count=1000)
+        self.assertEqual(report["total_after"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()

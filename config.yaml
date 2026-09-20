@@ -61,6 +61,9 @@ monitored_apps:
   - id: "387682726"
     name: "淘宝"
     countries: ["cn"]
+  - id: "414245413"
+    name: "京东"
+    countries: ["cn"]
   - id: "1044283059"
     name: "拼多多"
     countries: ["cn"]
@@ -73,6 +76,19 @@ monitored_apps:
   - id: "1641486558"
     name: "Temu"
     countries: ["us", "gb", "de", "jp", "kr", "mx"]
+  - id: "297606951"
+    name: "Amazon"
+    countries: ["us"]
+  - id: "348712880"
+    name: "Amazon"
+    countries: ["de"]
+  - id: "335187483"
+    name: "Amazon"
+    countries: ["gb"]
+  - id: "374254473"
+    name: "Amazon"
+    countries: ["jp"]
+
 
 
 # 3. Rankings Snapshot Configuration (Daily at 00:00 CST / 16:00 UTC)

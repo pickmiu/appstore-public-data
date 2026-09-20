@@ -111,13 +111,13 @@ def clean_review_record(raw: Dict[str, Any], default_source: str = "itunes_rss")
     """
     Standardize a single raw review dictionary, align fields, apply quality flags, and generate fingerprint.
     """
-    app_id = str(raw.get("app_id", "")).strip()
-    app_name = str(raw.get("app_name", "")).strip()
-    country = str(raw.get("country", "")).strip().lower()
-    review_id = str(raw.get("review_id", "")).strip()
-    author = str(raw.get("author", "Anonymous")).strip()
-    version = str(raw.get("version", "")).strip()
-    source = str(raw.get("source", default_source)).strip()
+    app_id = str(raw.get("app_id", "")).replace("\x00", "").strip()
+    app_name = str(raw.get("app_name", "")).replace("\x00", "").strip()
+    country = str(raw.get("country", "")).replace("\x00", "").strip().lower()
+    review_id = str(raw.get("review_id", "")).replace("\x00", "").strip()
+    author = str(raw.get("author", "Anonymous")).replace("\x00", "").strip()
+    version = str(raw.get("version", "")).replace("\x00", "").strip()
+    source = str(raw.get("source", default_source)).replace("\x00", "").strip()
 
     # Normalize star rating (integer between 1 and 5)
     try:
@@ -127,7 +127,7 @@ def clean_review_record(raw: Dict[str, Any], default_source: str = "itunes_rss")
         rating = 5
 
     # Text cleaning
-    orig_content = str(raw.get("content", ""))
+    orig_content = str(raw.get("content", "")).replace("\x00", "")
     cleaned_title = clean_text(raw.get("title", ""))
     cleaned_content = clean_text(orig_content)
 
@@ -177,7 +177,7 @@ def load_existing_review_keys(csv_path: str) -> Tuple[Set[str], Set[str]]:
     fingerprints = set()
     try:
         with open(csv_path, mode="r", encoding="utf-8-sig", newline="") as f:
-            reader = csv.reader(f)
+            reader = csv.reader(line.replace("\x00", "") for line in f)
             headers = next(reader, None)
             if not headers:
                 return set(), set()
@@ -293,7 +293,7 @@ def prune_reviews_data(
 
     all_records = []
     with open(csv_path, mode="r", encoding="utf-8-sig", newline="") as f:
-        reader = csv.DictReader(f)
+        reader = csv.DictReader(line.replace("\x00", "") for line in f)
         for row in reader:
             all_records.append(row)
 

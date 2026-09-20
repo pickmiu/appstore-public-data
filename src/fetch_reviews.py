@@ -396,8 +396,12 @@ def run_reviews_pipeline(config: Dict[str, Any]) -> List[Dict[str, Any]]:
             keep_all_helpful=keep_all_helpful
         )
 
+        # Disambiguate app display name if multiple apps share the same name (e.g. regional Amazon apps)
+        name_count = sum(1 for a in monitored_apps if a.get("name") == app_name)
+        display_name = f"{app_name} ({','.join([c.upper() for c in countries])})" if name_count > 1 else app_name
+
         pipeline_stats.append({
-            "name": app_name,
+            "name": display_name,
             "added": report.get("added_count", 0),
             "pruned": prune_report.get("pruned_count", 0)
         })
