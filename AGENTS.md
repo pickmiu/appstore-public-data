@@ -1,6 +1,6 @@
 This is an English-language base project. Use English throughout the project, except for original names, and answer user's questions in Chinese.
 
-When analyzing product reviews, always base the analysis on the existing real data in the data folder（You can `git pull` the latest data, but do not execute the code locally to retrieve it.）. Include representative examples from the original reviews and provide the percentage of each viewpoint. 
+When analyzing product reviews, always base the analysis on the existing real data in the data folder（You can `git pull` the latest data, but do not execute the code locally to retrieve it）. Include representative examples from the original reviews and provide the percentage of each viewpoint. 
 
 Keep the analysis objective, rigorous, accurate, and reliable.
 
