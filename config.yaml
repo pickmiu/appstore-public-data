@@ -1,18 +1,18 @@
 # ==============================================================================
-# App Store 公开数据监控与生命周期统一配置文件
+# App Store Public Data Monitoring & Lifecycle Unified Configuration
 # ==============================================================================
 
-# 1. 数据保留与生命周期规则
+# 1. Data Retention & Lifecycle Rules
 retention:
-  reviews_days: 180            # 评价默认保留天数 (半年)
-  reviews_max_count: 10000     # 单个应用普通最新评价上限
-  keep_all_helpful: true       # 永久保留所有“最有帮助”评价 (不受过期与1w条剔除影响)
-  rankings_days: 180           # 榜单快照默认保留天数 (半年)
+  reviews_days: 180            # Default retention for reviews in days (half a year)
+  reviews_max_count: 10000     # Maximum latest reviews per application
+  keep_all_helpful: true       # Permanently retain all "Most Helpful" reviews (exempt from expiry)
+  rankings_days: 180           # Default retention for ranking snapshots in days (half a year)
 
-# 2. 监控应用列表 (增量评价监控)
-# 涵盖核心大模型、垂直场景标杆与中国区头部梯队，精准匹配其上架国家 (US / CN)
+# 2. Monitored Applications List (Incremental Review Monitoring)
+# Covers core LLMs, vertical benchmarks, and leading apps, matched with target regions
 monitored_apps:
-  # --- 全球核心大模型与助手 ---
+  # --- Global Core LLMs & AI Assistants ---
   - id: "6448311069"
     name: "ChatGPT"
     countries: ["us"]
@@ -26,7 +26,7 @@ monitored_apps:
     name: "Claude by Anthropic"
     countries: ["us"]
 
-  # --- 垂直场景代表 (搜索、社交、视频、创意) ---
+  # --- Vertical Domains (Search, Social, Video, Creativity) ---
   - id: "1668000334"
     name: "Perplexity"
     countries: ["us"]
@@ -43,7 +43,7 @@ monitored_apps:
     name: "Character AI"
     countries: ["us"]
 
-  # --- 中国区头部大模型梯队 ---
+  # --- China Leading LLMs ---
   - id: "6459478672"
     name: "豆包"
     countries: ["cn"]
@@ -57,7 +57,7 @@ monitored_apps:
     name: "DeepSeek"
     countries: ["cn", "us"]
 
-  # --- 电商业务标杆 (拼多多系 / 国内与跨境出海) ---
+  # --- E-commerce & Global Trade (PDD Ecosystem / Domestic & Cross-border) ---
   - id: "1044283059"
     name: "拼多多"
     countries: ["cn"]
@@ -66,42 +66,41 @@ monitored_apps:
     countries: ["us", "gb", "de", "jp", "kr", "mx"]
 
 
-# 3. 榜单快照配置 (每日北京时间 00:00 执行)
+# 3. Rankings Snapshot Configuration (Daily at 00:00 CST / 16:00 UTC)
 rankings:
-  # 监控地区列表 (默认仅抓取中国区与美国区，支持按需扩展)
+  # Monitored regions (defaults to China and United States, expandable as needed)
   regions:
     - "cn"
     - "us"
 
-  # 游戏过滤策略 (彻底排除所有游戏相关应用及子品类)
+  # Game filtering strategy (completely exclude games and subgenres)
   exclude_games: true
 
-  # 抓取深度限制
-  # 注：Apple 官方公开 Top Free Feed API 单次物理硬上限为 100 款 (设置大于 100 无效)。
-  # 启用 exclude_games 过滤游戏后，实际纯应用数量通常在 95~98 款之间。
-  main_chart_limit: 100        # 主榜单前 N 名 (纯应用榜，自动过滤游戏)
-  primary_genre_limit: 10      # 一级品类前 N 名 (默认 10)
-  secondary_genre_limit: 5     # 二级品类前 N 名 (默认 5)
+  # Fetch depth limits
+  # Note: Apple official public Top Free Feed API has a hard physical ceiling of 100 apps.
+  # With exclude_games enabled, non-game app count is typically between 95~98 apps.
+  main_chart_limit: 100        # Main chart top N (non-game apps only, games filtered)
+  primary_genre_limit: 10      # Primary category top N (default: 10)
+  secondary_genre_limit: 5     # Secondary category top N (default: 5)
 
-  # 一级品类配置 (已剔除游戏 6014，聚焦纯应用领域)
+  # Primary category configuration (Games 6014 excluded, focusing on non-game categories)
   primary_genres:
-    - { id: 6005, name: "社交 (Social Networking)" }
-    - { id: 6007, name: "效率 (Productivity)" }
-    - { id: 6015, name: "财务 (Finance)" }
-    - { id: 6002, name: "工具 (Utilities)" }
-    - { id: 6008, name: "摄影与录像 (Photo & Video)" }
-    - { id: 6016, name: "娱乐 (Entertainment)" }
-    - { id: 6017, name: "教育 (Education)" }
-    - { id: 6012, name: "生活 (Lifestyle)" }
-    - { id: 6009, name: "新闻 (News)" }
-    - { id: 6024, name: "购物 (Shopping)" }
-    - { id: 6013, name: "健康健美 (Health & Fitness)" }
-    - { id: 6000, name: "商务 (Business)" }
+    - { id: 6005, name: "Social Networking" }
+    - { id: 6007, name: "Productivity" }
+    - { id: 6015, name: "Finance" }
+    - { id: 6002, name: "Utilities" }
+    - { id: 6008, name: "Photo & Video" }
+    - { id: 6016, name: "Entertainment" }
+    - { id: 6017, name: "Education" }
+    - { id: 6012, name: "Lifestyle" }
+    - { id: 6009, name: "News" }
+    - { id: 6024, name: "Shopping" }
+    - { id: 6013, name: "Health & Fitness" }
+    - { id: 6000, name: "Business" }
 
-  # 二级品类配置 (因排除游戏，原游戏子品类 7001~7019 全部移除，默认不抓取游戏二级品类)
+  # Secondary category configuration (defaults to empty since games are excluded)
   secondary_genres: []
 
-# 4. 洪峰监控与告警配置 (防漏抓满载检测)
+# 4. Overflow Alert & Flood Monitoring (Ceiling Detection)
 monitoring:
-  overflow_alert_threshold: 300   # 单次新增触碰上限预警阈值 (默认 300 条，结合 10 页满载触发 GitHub Actions 告警)
-
+  overflow_alert_threshold: 300   # Alert threshold for new reviews hitting 500 ceiling in single run

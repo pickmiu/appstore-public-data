@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-fetch_rankings.py - App Store 榜单抓取与每日 Markdown 快照生成模块
+fetch_rankings.py - App Store Rankings Scraper and Daily Markdown Snapshot Generator Module
 
-特性：
-1. 默认抓取中国区 (CN) 与美国区 (US)；
-2. 彻底排除游戏：总榜自动过滤 Games (6014) 并补齐至纯应用 Top 100；
-3. 一级品类（Top 10）使用轻量线程池并发抓取（耗时 < 5 秒）；
-4. 自动生成标准 Markdown 快照（rankings/YYYY-MM-DD_{region}.md）；
-5. 自动维护 180 天生命周期，清理半年前的历史快照文件。
+Features:
+1. Monitored regions default to China (CN) and United States (US);
+2. Strict game exclusion: automatically filters Games (6014) from main chart and pads to Top 100 non-game apps;
+3. Concurrent category fetching (Top 10) via lightweight thread pool (< 5s execution time);
+4. Automated standard Markdown snapshot generation (rankings/YYYY-MM-DD_{region}.md);
+5. Automated 180-day lifecycle retention and cleanup of older snapshots.
 """
 
 import os
@@ -25,8 +25,58 @@ REQUEST_TIMEOUT = 12
 USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
 
+# Standard genre translation mapping from localized Apple category names to English
+GENRE_TRANSLATION_MAP = {
+    "购物": "Shopping",
+    "娱乐": "Entertainment",
+    "效率": "Productivity",
+    "日常事务": "Productivity",
+    "音乐": "Music",
+    "摄影与录像": "Photo & Video",
+    "社交": "Social Networking",
+    "工具": "Utilities",
+    "实用工具": "Utilities",
+    "生活": "Lifestyle",
+    "财务": "Finance",
+    "新闻": "News",
+    "教育": "Education",
+    "商务": "Business",
+    "健康健美": "Health & Fitness",
+    "图书": "Books",
+    "美食佳饮": "Food & Drink",
+    "旅游": "Travel",
+    "旅行": "Travel",
+    "体育": "Sports",
+    "医疗": "Medical",
+    "参考": "Reference",
+    "天气": "Weather",
+    "导航": "Navigation",
+    "儿童": "Kids",
+    "报刊杂志": "Magazines & Newspapers",
+    "杂志与报刊": "Magazines & Newspapers",
+    "贴纸": "Stickers",
+    "游戏": "Games",
+}
+
+
+def translate_genre_to_english(genre: str) -> str:
+    """Normalize and translate category names to English while preserving original if unmapped."""
+    if not genre:
+        return ""
+    g = genre.strip()
+    if g in GENRE_TRANSLATION_MAP:
+        return GENRE_TRANSLATION_MAP[g]
+    m = re.search(r"\(([^)]+)\)", g)
+    if m:
+        return m.group(1).strip()
+    for cn, en in GENRE_TRANSLATION_MAP.items():
+        if cn in g:
+            return en
+    return g
+
+
 def is_game_item(genre_ids: List[str], genre_names: List[str]) -> bool:
-    """判定是否为游戏类应用 (Genre ID: 6014 或包含 Game/游戏)"""
+    """Determine whether an application belongs to Games (Genre ID: 6014 or containing Game/游戏)."""
     if "6014" in genre_ids:
         return True
     for g in genre_names:
@@ -37,10 +87,9 @@ def is_game_item(genre_ids: List[str], genre_names: List[str]) -> bool:
 
 def fetch_main_chart(region: str, limit: int = 100, exclude_games: bool = True) -> List[Dict[str, Any]]:
     """
-    抓取主榜单免费榜 (Top Free)，支持过滤所有游戏项目
-    优先采用 Apple Media Services 现代 Feed API，失败则回退至 iTunes RSS
+    Fetch the Top Free main chart, supporting non-game filtering.
+    Prioritizes modern Apple Media Services Feed API, falling back to iTunes RSS.
     """
-    # Apple Marketing Tools API 仅支持 100
     url = f"https://rss.applemarketingtools.com/api/v2/{region}/apps/top-free/100/apps.json"
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
 
@@ -52,7 +101,7 @@ def fetch_main_chart(region: str, limit: int = 100, exclude_games: bool = True) 
             for item in results:
                 genres = [g.get("name", "") for g in item.get("genres", [])]
                 genre_ids = [str(g.get("genreId", "")) for g in item.get("genres", [])]
-                
+
                 if exclude_games and is_game_item(genre_ids, genres):
                     continue
 
@@ -68,9 +117,9 @@ def fetch_main_chart(region: str, limit: int = 100, exclude_games: bool = True) 
                     break
             return apps
     except Exception as e:
-        print(f"[{region.upper()}] Apple Media Services 主榜拉取失败，尝试回退 iTunes RSS: {e}", file=sys.stderr)
+        print(f"[{region.upper()}] Apple Media Services main chart request failed, falling back to iTunes RSS: {e}", file=sys.stderr)
 
-    # 回退至 iTunes RSS
+    # Fallback to iTunes RSS
     fallback_url = f"https://itunes.apple.com/{region}/rss/topfreeapplications/limit=100/json"
     fallback_req = urllib.request.Request(fallback_url, headers={"User-Agent": USER_AGENT})
     try:
@@ -83,7 +132,7 @@ def fetch_main_chart(region: str, limit: int = 100, exclude_games: bool = True) 
                     continue
                 cat_label = e.get("category", {}).get("attributes", {}).get("label", "")
                 cat_id = str(e.get("category", {}).get("attributes", {}).get("im:id", ""))
-                
+
                 if exclude_games and is_game_item([cat_id], [cat_label]):
                     continue
 
@@ -112,14 +161,14 @@ def fetch_main_chart(region: str, limit: int = 100, exclude_games: bool = True) 
                     break
             return apps
     except Exception as ex:
-        print(f"[{region.upper()}] 回退 iTunes RSS 主榜拉取失败: {ex}", file=sys.stderr)
+        print(f"[{region.upper()}] iTunes RSS fallback main chart failed: {ex}", file=sys.stderr)
 
     return []
 
 
 def fetch_genre_chart(region: str, genre_id: int, genre_name: str, limit: int = 10) -> Dict[str, Any]:
     """
-    抓取单个品类的免费榜前 N 名
+    Fetch top N free apps for a specific category.
     """
     url = f"https://itunes.apple.com/{region}/rss/topfreeapplications/limit={limit}/genre={genre_id}/json"
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
@@ -142,7 +191,6 @@ def fetch_genre_chart(region: str, genre_id: int, genre_name: str, limit: int = 
                     artist = e.get("im:artist", {}).get("label", "")
                     cat = e.get("category", {}).get("attributes", {}).get("label", "")
 
-                    # 安全提取 link url
                     link_obj = e.get("link")
                     if isinstance(link_obj, list) and link_obj:
                         app_url = link_obj[0].get("attributes", {}).get("href", "")
@@ -151,7 +199,6 @@ def fetch_genre_chart(region: str, genre_id: int, genre_name: str, limit: int = 
                     else:
                         app_url = ""
 
-                    # 安全提取 id
                     id_obj = e.get("id")
                     if isinstance(id_obj, dict):
                         app_id = id_obj.get("attributes", {}).get("im:id", "")
@@ -174,7 +221,7 @@ def fetch_genre_chart(region: str, genre_id: int, genre_name: str, limit: int = 
             if attempt < max_retries:
                 time.sleep(0.5 * (attempt + 1))
                 continue
-            print(f"[{region.upper()}] 抓取品类 {genre_name} (ID: {genre_id}) 失败: {e}", file=sys.stderr)
+            print(f"[{region.upper()}] Failed to fetch category {genre_name} (ID: {genre_id}): {e}", file=sys.stderr)
             return {
                 "genre_id": genre_id,
                 "genre_name": genre_name,
@@ -189,7 +236,7 @@ def fetch_all_genres_concurrently(
     max_workers: int = 4
 ) -> List[Dict[str, Any]]:
     """
-    使用轻量线程池并发抓取所有指定品类榜单，极大压缩 Runner 运行耗时
+    Fetch specified category charts concurrently with a lightweight thread pool to minimize Runner execution time.
     """
     results = []
     if not genres:
@@ -206,9 +253,8 @@ def fetch_all_genres_concurrently(
                 results.append(res)
             except Exception as e:
                 g = future_map[future]
-                print(f"[{region.upper()}] 并发获取品类 {g.get('name')} 异常: {e}", file=sys.stderr)
+                print(f"[{region.upper()}] Exception fetching category {g.get('name')}: {e}", file=sys.stderr)
 
-    # 按照原配置列表顺序排序，确保 Markdown 快照格式稳定
     genre_order = {g["id"]: idx for idx, g in enumerate(genres)}
     results.sort(key=lambda x: genre_order.get(x["genre_id"], 999))
     return results
@@ -223,7 +269,7 @@ def generate_markdown_snapshot(
     output_dir: str
 ) -> str:
     """
-    生成规范、排版清晰的每日榜单 Markdown 快照文件
+    Generate clean, standardized daily rankings Markdown snapshot file.
     """
     os.makedirs(output_dir, exist_ok=True)
     file_path = os.path.join(output_dir, f"{snapshot_date_str}_{region.lower()}.md")
@@ -233,61 +279,61 @@ def generate_markdown_snapshot(
     time_str_cst = cst_time.strftime("%Y-%m-%d %H:%M:%S")
     time_str_utc = now_utc.strftime("%Y-%m-%d %H:%M:%S")
 
-    region_name = "中国区 (CN)" if region.lower() == "cn" else "美国区 (US)" if region.lower() == "us" else region.upper()
+    region_name = "China (CN)" if region.lower() == "cn" else "United States (US)" if region.lower() == "us" else region.upper()
 
     lines = [
-        f"# App Store 纯应用榜单快照 - {region_name}",
+        f"# App Store Non-Game App Rankings - {region_name}",
         "",
-        f"- **快照日期**: `{snapshot_date_str}`",
-        f"- **生成时间**: {time_str_cst} (北京时间 CST) / {time_str_utc} (UTC)",
-        f"- **数据策略**: 纯应用模式（彻底排除游戏相关分类与应用）",
-        f"- **数据源**: Apple Media Services & iTunes RSS 官方公开 Feed",
+        f"- **Snapshot Date**: `{snapshot_date_str}`",
+        f"- **Generated At**: {time_str_cst} (CST) / {time_str_utc} (UTC)",
+        f"- **Data Policy**: Non-game applications (games completely excluded)",
+        f"- **Data Sources**: Apple Media Services & iTunes RSS Official Public Feeds",
         "",
         "---",
         "",
-        "## 目录导航",
-        f"- [🏆 免费主榜 Top {len(main_apps)} (纯应用)](#-免费主榜-top-{len(main_apps)}-纯应用)",
-        "- [📂 一级品类 Top 10](#-一级品类-top-10)",
+        "## Table of Contents",
+        f"- [🏆 Top Free Apps Top {len(main_apps)} (Non-Game)](#-top-free-apps-top-{len(main_apps)}-non-game)",
+        "- [📂 Primary Categories Top 10](#-primary-categories-top-10)",
     ]
 
     if secondary_charts:
-        lines.append("- [🎮 二级细分品类 Top 5](#-二级细分品类-top-5)")
+        lines.append("- [🎮 Secondary Categories Top 5](#-secondary-categories-top-5)")
 
     lines.extend([
         "",
         "---",
         "",
-        f"## 🏆 免费主榜 Top {len(main_apps)} (纯应用)",
+        f"## 🏆 Top Free Apps Top {len(main_apps)} (Non-Game)",
         "",
-        "| 排名 | 应用名称 | 开发者 | 核心分类 |",
+        "| Rank | App Name | Developer | Primary Category |",
         "| :---: | :--- | :--- | :--- |"
     ])
 
     for idx, app in enumerate(main_apps, 1):
         name = app.get("name", "").replace("|", "-")
         artist = app.get("artist", "").replace("|", "-")
-        genre = app.get("genre", "")
+        genre = translate_genre_to_english(app.get("genre", ""))
         lines.append(f"| {idx} | **{name}** | {artist} | {genre} |")
 
     lines.extend([
         "",
         "---",
         "",
-        "## 📂 一级品类 Top 10",
+        "## 📂 Primary Categories Top 10",
         ""
     ])
 
     for chart in primary_charts:
-        g_name = chart.get("genre_name", "")
+        g_name = translate_genre_to_english(chart.get("genre_name", ""))
         apps = chart.get("apps", [])
-        lines.append(f"### 📌 {g_name} (前 {len(apps)} 名)")
+        lines.append(f"### 📌 {g_name} (Top {len(apps)})")
         lines.append("")
         if not apps:
-            lines.append("*暂无数据或抓取未返回*")
+            lines.append("*No data or empty response from store*")
             lines.append("")
             continue
 
-        lines.append("| 排名 | 应用名称 | 开发者 |")
+        lines.append("| Rank | App Name | Developer |")
         lines.append("| :---: | :--- | :--- |")
         for idx, app in enumerate(apps, 1):
             name = app.get("name", "").replace("|", "-")
@@ -299,20 +345,20 @@ def generate_markdown_snapshot(
         lines.extend([
             "---",
             "",
-            "## 🎮 二级细分品类 Top 5",
+            "## 🎮 Secondary Categories Top 5",
             ""
         ])
         for chart in secondary_charts:
-            g_name = chart.get("genre_name", "")
+            g_name = translate_genre_to_english(chart.get("genre_name", ""))
             apps = chart.get("apps", [])
-            lines.append(f"### 🔹 {g_name} (前 {len(apps)} 名)")
+            lines.append(f"### 🔹 {g_name} (Top {len(apps)})")
             lines.append("")
             if not apps:
-                lines.append("*暂无数据或抓取未返回*")
+                lines.append("*No data or empty response from store*")
                 lines.append("")
                 continue
 
-            lines.append("| 排名 | 应用名称 | 开发者 |")
+            lines.append("| Rank | App Name | Developer |")
             lines.append("| :---: | :--- | :--- |")
             for idx, app in enumerate(apps, 1):
                 name = app.get("name", "").replace("|", "-")
@@ -328,7 +374,7 @@ def generate_markdown_snapshot(
 
 def prune_historical_rankings(rankings_dir: str, retention_days: int = 180) -> int:
     """
-    自动清理 rankings/ 目录下超过 retention_days (默认180天) 的历史 Markdown 快照文件
+    Clean up historical ranking snapshot files in rankings/ older than retention_days (default 180 days).
     """
     if not os.path.exists(rankings_dir):
         return 0
@@ -357,7 +403,7 @@ def prune_historical_rankings(rankings_dir: str, retention_days: int = 180) -> i
 
 def run_rankings_pipeline(config: Dict[str, Any]) -> None:
     """
-    全流程执行多地区榜单抓取、快照生成与生命周期清理
+    Execute full pipeline for rankings scraping, snapshot generation, and retention pruning.
     """
     rankings_cfg = config.get("rankings", {})
     regions = rankings_cfg.get("regions", ["cn", "us"])
@@ -370,7 +416,6 @@ def run_rankings_pipeline(config: Dict[str, Any]) -> None:
     primary_genres = rankings_cfg.get("primary_genres", [])
     secondary_genres = rankings_cfg.get("secondary_genres", [])
 
-    # 如果开启 exclude_games，过滤掉可能包含的游戏品类配置
     if exclude_games:
         primary_genres = [
             g for g in primary_genres
@@ -392,28 +437,28 @@ def run_rankings_pipeline(config: Dict[str, Any]) -> None:
     snapshot_date_str = cst_time.strftime("%Y-%m-%d")
 
     print(f"\n==================================================")
-    print(f"📊 开始生成 App Store 榜单快照 (日期: {snapshot_date_str})")
-    print(f"🌍 监控地区: {', '.join([r.upper() for r in regions])}")
-    print(f"🚫 游戏排除过滤: {'已启用 (纯应用榜单)' if exclude_games else '未启用'}")
+    print(f"📊 Starting App Store Rankings Snapshot (Date: {snapshot_date_str})")
+    print(f"🌍 Monitored regions: {', '.join([r.upper() for r in regions])}")
+    print(f"🚫 Game filtering: {'Enabled (Non-game apps only)' if exclude_games else 'Disabled'}")
     print(f"==================================================")
 
     for region in regions:
         region = region.strip().lower()
         t0 = time.time()
-        print(f"\n  [正在抓取 {region.upper()} 榜单] ...")
+        print(f"\n  [Fetching {region.upper()} rankings] ...")
 
-        # 1. 主榜单 Top 100
+        # 1. Main chart
         main_apps = fetch_main_chart(region, limit=main_limit, exclude_games=exclude_games)
-        print(f"  -> 主榜单获取完成: 纯应用 {len(main_apps)} 款")
+        print(f"  -> Main chart completed: {len(main_apps)} non-game apps")
 
-        # 2. 一级品类 Top 10 并发拉取
+        # 2. Primary categories
         primary_charts = fetch_all_genres_concurrently(region, primary_genres, limit=primary_limit, max_workers=4)
-        print(f"  -> 一级品类并发拉取完成: {len(primary_charts)} 个品类")
+        print(f"  -> Primary categories completed: {len(primary_charts)} categories")
 
-        # 3. 二级品类 Top 5 (如有配置)
+        # 3. Secondary categories (if configured)
         secondary_charts = fetch_all_genres_concurrently(region, secondary_genres, limit=secondary_limit, max_workers=4) if secondary_genres else []
 
-        # 4. 生成 Markdown 快照文件
+        # 4. Generate Markdown snapshot
         out_file = generate_markdown_snapshot(
             region=region,
             main_apps=main_apps,
@@ -423,12 +468,12 @@ def run_rankings_pipeline(config: Dict[str, Any]) -> None:
             output_dir=rankings_dir
         )
         elapsed = time.time() - t0
-        print(f"  ✅ {region.upper()} 快照生成成功: {os.path.relpath(out_file)} (耗时: {elapsed:.2f}s)")
+        print(f"  ✅ {region.upper()} snapshot generated: {os.path.relpath(out_file)} (Duration: {elapsed:.2f}s)")
 
-    # 5. 清理超过 180 天的旧快照
+    # 5. Prune old snapshots older than 180 days
     pruned_files = prune_historical_rankings(rankings_dir, retention_days=rankings_days)
     if pruned_files > 0:
-        print(f"\n🧹 已自动清理超过 {rankings_days} 天的旧榜单快照: {pruned_files} 个文件")
+        print(f"\n🧹 Automatically pruned {pruned_files} old ranking snapshot files (> {rankings_days} days)")
 
 
 if __name__ == "__main__":
@@ -441,10 +486,10 @@ if __name__ == "__main__":
             "primary_genre_limit": 10,
             "secondary_genre_limit": 5,
             "primary_genres": [
-                {"id": 6005, "name": "社交 (Social Networking)"},
-                {"id": 6007, "name": "效率 (Productivity)"},
-                {"id": 6015, "name": "财务 (Finance)"},
-                {"id": 6002, "name": "工具 (Utilities)"}
+                {"id": 6005, "name": "Social Networking"},
+                {"id": 6007, "name": "Productivity"},
+                {"id": 6015, "name": "Finance"},
+                {"id": 6002, "name": "Utilities"}
             ],
             "secondary_genres": []
         }

@@ -7,7 +7,7 @@ concurrency:
   group: monitor-reviews
   cancel-in-progress: false
 
-# 赋予工作流代码提交与写入权限
+# Grant write permissions for git commit and push
 permissions:
   contents: write
 

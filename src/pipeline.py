@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-pipeline.py - 数据清洗、指纹生成、去重存储与生命周期管理核心模块
+pipeline.py - Core Engine for Review Cleaning, Fingerprinting, Deduplication, and Lifecycle Management
 
-遵循大道至简与零冗余依赖原则，通过 SHA256 内容指纹保障增量评价绝不重复，
-并严格执行半年（180天）保留、1w条上限及“最有帮助（Most Helpful）”永久留存规则。
+Follows simplicity and zero-redundancy principles. Employs SHA-256 content fingerprints to guarantee
+zero duplicates in incremental review collection, and enforces a 180-day retention window, a 10,000-review
+ceiling, and permanent retention for "Most Helpful" reviews.
 """
 
 import os
@@ -14,67 +15,67 @@ import hashlib
 from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Any, Set, Tuple
 
-# 统一 CSV 表头规范
+# Standardized CSV Header Definition
 CSV_COLUMNS = [
-    "fingerprint",       # 核心主键：SHA-256 (app_id + author + title + content + date_day)
-    "review_id",         # 官方 App Store 评价唯一 ID（如有）
-    "app_id",            # 应用 ID
-    "app_name",          # 应用名称
-    "country",           # 商店地区代码 (如 us, cn)
-    "rating",            # 评分 (1-5 整数)
-    "title",             # 清洗后的标题
-    "content",           # 清洗后的正文
-    "original_content",  # 原始正文（备份未过滤原貌，便于追溯）
-    "author",            # 评论者用户名
-    "version",           # 评价对应的 App 版本号
-    "review_date",       # 标准 ISO-8601 UTC 时间 (YYYY-MM-DDTHH:MM:SSZ)
-    "is_most_helpful",   # 是否为官方/落地页推荐的高赞或最有帮助评价 (永久保护)
-    "source",            # 数据源标识 (itunes_rss / web_ssr / manual)
-    "is_short",          # 质量标记：是否为极短无意义内容
-    "is_spam"            # 质量标记：是否疑似广告/刷榜引流
+    "fingerprint",       # Primary key: SHA-256 (app_id + author + title + content + date_day)
+    "review_id",         # Official App Store review ID (if present)
+    "app_id",            # Application ID
+    "app_name",          # Application name
+    "country",           # Country / storefront code (e.g. us, cn)
+    "rating",            # Star rating (1-5 integer)
+    "title",             # Cleaned review title
+    "content",           # Cleaned review body content
+    "original_content",  # Unmodified original body (for traceability)
+    "author",            # Reviewer username
+    "version",           # App version associated with review
+    "review_date",       # Standard ISO-8601 UTC timestamp (YYYY-MM-DDTHH:MM:SSZ)
+    "is_most_helpful",   # Whether flagged as featured/most-helpful (permanently protected)
+    "source",            # Data source identifier (itunes_rss / web_ssr / manual)
+    "is_short",          # Quality flag: ultra-short or meaningless review
+    "is_spam"            # Quality flag: suspected spam, promotion, or bot activity
 ]
 
-# 垃圾/引流评论特征正则 (网址、短链、微信号、手机号等)
+# Regular expression for spam and promotional patterns (links, handles, phone numbers)
 SPAM_PATTERNS = re.compile(
     r"(https?://|www\.|t\.me/|bit\.ly/|weixin|vx:|微信|\+?\d{7,15})",
     re.IGNORECASE
 )
 
-# 仅含标点和空白正则
+# Regular expression for punctuation and whitespace only
 PUNCT_ONLY_PATTERN = re.compile(r"^[\s\W_]+$")
 
 
 def clean_text(text: Any) -> str:
     """
-    文本清洗：
-    1. 移除 ASCII 不见控制字符 (保留换行 \n 和制表符 \t)
-    2. 统一换行符为 Unix 格式 (\n)
-    3. 压缩多余连续换行 (最多保留 2 个)
-    4. 清除每行首尾多余空格
+    Text cleaning and sanitization:
+    1. Remove invisible ASCII control characters (preserving \n and \t).
+    2. Normalize line breaks to Unix style (\n).
+    3. Collapse redundant consecutive blank lines (max 2).
+    4. Strip leading and trailing whitespace from each line.
     """
     if text is None:
         return ""
     s = str(text)
-    # 移除 ASCII 控制字符
+    # Remove ASCII control characters
     s = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", "", s)
-    # 统一换行符
+    # Normalize line breaks
     s = s.replace("\r\n", "\n").replace("\r", "\n")
-    # 折叠 3 个及以上换行为 2 个
+    # Collapse 3 or more line breaks into 2
     s = re.sub(r"\n{3,}", "\n\n", s)
-    # 去除每行首尾空格
+    # Strip whitespace per line
     lines = [line.strip() for line in s.split("\n")]
     return "\n".join(lines).strip()
 
 
 def parse_standard_datetime(date_val: Any) -> str:
-    """将各类格式的时间字符串转换为标准 ISO-8601 UTC 字符串 (YYYY-MM-DDTHH:MM:SSZ)"""
+    """Convert various datetime representations into standard ISO-8601 UTC string (YYYY-MM-DDTHH:MM:SSZ)."""
     if not date_val:
         return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    
+
     s = str(date_val).strip()
-    # 剥离毫秒/微秒部分 (如 .000 或 .123456)，确保统一匹配秒级 ISO 标准
+    # Strip millisecond / microsecond component (.000 or .123456)
     s = re.sub(r"\.\d+", "", s)
-    # 尝试解析常见时间格式
+    # Parse standard formats
     for fmt in (
         "%Y-%m-%dT%H:%M:%S%z",
         "%Y-%m-%dT%H:%M:%SZ",
@@ -89,16 +90,17 @@ def parse_standard_datetime(date_val: Any) -> str:
             return dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         except ValueError:
             continue
-            
+
     return s
 
 
 def compute_fingerprint(app_id: str, author: str, title: str, content: str, date_iso: str) -> str:
     """
-    计算全局内容指纹 (SHA-256)
-    
-    提取 app_id + author + title + content + date_day 进行哈希。
-    使用日期前 10 位（YYYY-MM-DD）可消除毫秒级抓取偏差，只要同一天同一用户发布相同内容即判定唯一。
+    Compute unique SHA-256 content fingerprint.
+
+    Hashes app_id + author + title + content + date_day.
+    Using the first 10 characters (YYYY-MM-DD) eliminates millisecond-level crawl discrepancies,
+    ensuring that identical reviews posted by the same user on the same date are recognized as duplicates.
     """
     date_day = date_iso[:10] if len(date_iso) >= 10 else date_iso
     raw_str = f"{app_id}|{author.strip()}|{title.strip()}|{content.strip()}|{date_day}"
@@ -107,7 +109,7 @@ def compute_fingerprint(app_id: str, author: str, title: str, content: str, date
 
 def clean_review_record(raw: Dict[str, Any], default_source: str = "itunes_rss") -> Dict[str, Any]:
     """
-    标准化单条评价字典，执行字段对齐、质量打标与指纹生成
+    Standardize a single raw review dictionary, align fields, apply quality flags, and generate fingerprint.
     """
     app_id = str(raw.get("app_id", "")).strip()
     app_name = str(raw.get("app_name", "")).strip()
@@ -117,32 +119,31 @@ def clean_review_record(raw: Dict[str, Any], default_source: str = "itunes_rss")
     version = str(raw.get("version", "")).strip()
     source = str(raw.get("source", default_source)).strip()
 
-    # 评分边界规范化 (1-5 整数)
+    # Normalize star rating (integer between 1 and 5)
     try:
         rating = int(raw.get("rating", 5))
         rating = max(1, min(5, rating))
     except (ValueError, TypeError):
         rating = 5
 
-    # 文本清洗
+    # Text cleaning
     orig_content = str(raw.get("content", ""))
     cleaned_title = clean_text(raw.get("title", ""))
     cleaned_content = clean_text(orig_content)
 
-    # 时间标准化
+    # Standardize datetime
     date_iso = parse_standard_datetime(raw.get("review_date") or raw.get("updated") or raw.get("date"))
 
-    # 最有帮助标记
+    # Most helpful indicator
     is_most_helpful = bool(raw.get("is_most_helpful", False) or "helpful" in source.lower())
 
-    # 质量打标
-    # 中文若 <= 1 个字符，或非中文 <= 2 个字符，或全标点空白，标记为短评
+    # Quality flagging: CJK single char or non-CJK <= 2 chars or punctuation only marked as short review
     has_cjk = bool(re.search(r"[\u4e00-\u9fa5]", cleaned_content))
     min_len = 1 if has_cjk else 2
     is_short = len(cleaned_content) <= min_len or bool(PUNCT_ONLY_PATTERN.match(cleaned_content))
     is_spam = bool(SPAM_PATTERNS.search(cleaned_content) or SPAM_PATTERNS.search(cleaned_title))
 
-    # 指纹生成
+    # Fingerprint generation
     fingerprint = raw.get("fingerprint")
     if not fingerprint:
         fingerprint = compute_fingerprint(app_id, author, cleaned_title, cleaned_content, date_iso)
@@ -168,7 +169,7 @@ def clean_review_record(raw: Dict[str, Any], default_source: str = "itunes_rss")
 
 
 def load_existing_review_keys(csv_path: str) -> Tuple[Set[str], Set[str]]:
-    """快速读取已存在 CSV 文件的 (review_id 集合, fingerprint 集合)"""
+    """Quickly read (review_id set, fingerprint set) from an existing CSV file."""
     if not os.path.exists(csv_path):
         return set(), set()
 
@@ -201,12 +202,12 @@ def load_existing_review_keys(csv_path: str) -> Tuple[Set[str], Set[str]]:
                     if fp:
                         fingerprints.add(fp)
     except Exception as e:
-        print(f"[警告] 读取 CSV 索引集合异常: {e}")
+        print(f"[Warning] Error reading CSV index keys from {csv_path}: {e}")
     return review_ids, fingerprints
 
 
 def load_existing_fingerprints(csv_path: str) -> Set[str]:
-    """快速读取已存在 CSV 文件的 fingerprint 集合（保留向后兼容）"""
+    """Read fingerprint set from existing CSV file (kept for backward compatibility)."""
     _, fps = load_existing_review_keys(csv_path)
     return fps
 
@@ -217,12 +218,12 @@ def save_reviews_to_csv(
     default_source: str = "itunes_rss"
 ) -> Dict[str, Any]:
     """
-    统一增量保存入口：清洗 -> ID/指纹多重去重 -> 增量追加写入 CSV
+    Unified incremental save: Clean -> Multi-tier deduplication -> Append to CSV.
 
-    :param raw_reviews: 待保存的评价原始数据
-    :param output_path: 输出 CSV 路径
-    :param default_source: 默认数据来源标识
-    :return: 统计报告
+    :param raw_reviews: List of raw review dictionaries to save
+    :param output_path: Destination CSV filepath
+    :param default_source: Default source identifier
+    :return: Operation statistics summary dictionary
     """
     dir_name = os.path.dirname(output_path)
     if dir_name:
@@ -240,7 +241,7 @@ def save_reviews_to_csv(
         rev_id = str(cleaned.get("review_id", "")).strip()
         fp = cleaned["fingerprint"]
 
-        # 优先按 review_id 查重（解决跨渠道清洗微差导致的重复）；无 review_id 时回退至内容指纹查重
+        # Prioritize review_id deduplication; fallback to content fingerprint
         if rev_id and rev_id in existing_ids:
             skipped_count += 1
             continue
@@ -254,7 +255,7 @@ def save_reviews_to_csv(
         new_records.append(cleaned)
         rating_counts[cleaned["rating"]] = rating_counts.get(cleaned["rating"], 0) + 1
 
-    # 追加写入 CSV (UTF-8 with BOM)
+    # Append to CSV (UTF-8 with BOM for Excel friendliness)
     if new_records:
         write_mode = "a" if file_exists else "w"
         with open(output_path, mode=write_mode, encoding="utf-8-sig", newline="") as f:
@@ -281,11 +282,11 @@ def prune_reviews_data(
     keep_all_helpful: bool = True
 ) -> Dict[str, Any]:
     """
-    执行评价数据生命周期裁剪：
-    1. 提取所有 is_most_helpful == True 的高赞评价，永久保留（不受 180 天与 1w 条裁剪影响）；
-    2. 对于普通最新评价，剔除超过 retention_days (180天) 的记录；
-    3. 剩余普通评价按 review_date 倒序排序，最多保留 max_count (10,000条)；
-    4. 合并保护池与普通评价，按时间倒序重新写回 CSV，并生成/更新对应的 Markdown 概览。
+    Execute data lifecycle pruning on reviews CSV:
+    1. Extract all is_most_helpful == True reviews into a permanent protection pool (exempt from 180-day & 10k limits).
+    2. Filter out ordinary reviews older than retention_days (180 days).
+    3. Sort remaining ordinary reviews by review_date descending, retaining up to max_count (10,000).
+    4. Merge protected reviews with retained ordinary reviews, write back to CSV, preserving timeline order.
     """
     if not os.path.exists(csv_path) or os.path.getsize(csv_path) == 0:
         return {"csv_path": csv_path, "status": "file_empty_or_not_found"}
@@ -312,20 +313,18 @@ def prune_reviews_data(
         if keep_all_helpful and is_helpful:
             helpful_pool.append(r)
         else:
-            # 普通评价检查是否过期
             r_date = r.get("review_date", "")
             if r_date >= cutoff_iso:
                 ordinary_pool.append(r)
 
-    # 普通评价按日期降序排列并截断至上限
+    # Sort ordinary reviews descending by date and truncate to max_count
     ordinary_pool.sort(key=lambda x: x.get("review_date", ""), reverse=True)
     ordinary_retained = ordinary_pool[:max_count]
 
-    # 合并保护池与保留的普通评价，使用 fingerprint 确保无重
+    # Merge protected pool and retained ordinary pool using fingerprint for uniqueness
     seen_fps = set()
     combined_records = []
 
-    # 优先放入 helpful 保护池
     for r in helpful_pool:
         fp = r.get("fingerprint")
         if fp and fp not in seen_fps:
@@ -338,10 +337,10 @@ def prune_reviews_data(
             seen_fps.add(fp)
             combined_records.append(r)
 
-    # 最终按时间倒序
+    # Final sort descending by review date
     combined_records.sort(key=lambda x: x.get("review_date", ""), reverse=True)
 
-    # 写回 CSV
+    # Write back to CSV
     with open(csv_path, mode="w", encoding="utf-8-sig", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=CSV_COLUMNS)
         writer.writeheader()

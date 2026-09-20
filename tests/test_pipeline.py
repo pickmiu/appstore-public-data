@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-test_pipeline.py - 数据清洗、去重与生命周期维护核心逻辑单元测试
+test_pipeline.py - Unit tests for data cleaning, deduplication, and lifecycle maintenance logic
 """
 
 import os
@@ -33,9 +33,9 @@ class TestPipeline(unittest.TestCase):
         shutil.rmtree(self.test_dir, ignore_errors=True)
 
     def test_clean_text(self):
-        dirty = "  测试 \x00\x08 标题 \r\n\r\n\r\n\r\n多余换行   "
+        dirty = "  Test \x00\x08 Title \r\n\r\n\r\n\r\nExtra newlines   "
         cleaned = clean_text(dirty)
-        self.assertEqual(cleaned, "测试  标题\n\n多余换行")
+        self.assertEqual(cleaned, "Test  Title\n\nExtra newlines")
 
     def test_datetime_parsing(self):
         dt_str = "2026-09-18T10:20:30-07:00"
@@ -43,7 +43,7 @@ class TestPipeline(unittest.TestCase):
         self.assertTrue(parsed.endswith("Z"))
         self.assertEqual(parsed, "2026-09-18T17:20:30Z")
 
-        # 支持包含毫秒/微秒的 Web SSR 格式与带时区格式
+        # Millisecond / microsecond Web SSR format and timezone parsing
         ms_str1 = "2026-09-18T00:03:55.000Z"
         self.assertEqual(parse_standard_datetime(ms_str1), "2026-09-18T00:03:55Z")
 
@@ -59,18 +59,18 @@ class TestPipeline(unittest.TestCase):
         self.assertNotEqual(fp1, fp3)
 
     def test_quality_flags(self):
-        # 英文短评测试
+        # English short review
         rec_short_en = clean_review_record({"title": "", "content": "ok"})
         self.assertTrue(rec_short_en["is_short"])
 
-        # 中文短评测试 (1 个字为短评，2 个字保留为有态度评价)
+        # Chinese short review (1 char is short, 2 chars retained)
         rec_short_cn = clean_review_record({"title": "", "content": "好"})
         self.assertTrue(rec_short_cn["is_short"])
         rec_valid_cn = clean_review_record({"title": "", "content": "好用"})
         self.assertFalse(rec_valid_cn["is_short"])
 
-        # 垃圾广告引流测试
-        rec_spam = clean_review_record({"title": "推广", "content": "加微信号: test8888 免费领"})
+        # Promotional spam detection
+        rec_spam = clean_review_record({"title": "Promo", "content": "Contact weixin: test8888 for free"})
         self.assertTrue(rec_spam["is_spam"])
 
     def test_deduplication_and_save(self):
@@ -82,7 +82,7 @@ class TestPipeline(unittest.TestCase):
         self.assertEqual(rep1["added_count"], 2)
         self.assertEqual(rep1["skipped_count"], 0)
 
-        # 再次保存相同批次 + 1条新数据
+        # Save duplicate batch + 1 new review
         batch_2 = [
             {"review_id": "1", "app_id": "100", "author": "U1", "title": "T1", "content": "C1", "review_date": "2026-09-18T10:00:00Z"},
             {"review_id": "3", "app_id": "100", "author": "U3", "title": "T3", "content": "C3", "review_date": "2026-09-18T11:00:00Z"}
@@ -92,9 +92,9 @@ class TestPipeline(unittest.TestCase):
         self.assertEqual(rep2["skipped_count"], 1)
         self.assertEqual(rep2["total_records"], 3)
 
-        # review_id 优先去重测试：即使标题有轻微差异，只要 review_id 相同也能精准去重
+        # review_id priority deduplication test
         batch_3 = [
-            {"review_id": "2", "app_id": "100", "author": "U2", "title": "T2 (Web端格式不同)", "content": "C2", "review_date": "2026-09-18T10:00:00Z"}
+            {"review_id": "2", "app_id": "100", "author": "U2", "title": "T2 (Web format diff)", "content": "C2", "review_date": "2026-09-18T10:00:00Z"}
         ]
         rep3 = save_reviews_to_csv(batch_3, self.test_csv)
         self.assertEqual(rep3["added_count"], 0)
@@ -106,10 +106,10 @@ class TestPipeline(unittest.TestCase):
         date_recent = now.strftime("%Y-%m-%dT%H:%M:%SZ")
         date_old = (now - timedelta(days=200)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
-        # 构造数据：
-        # 1 条近期普通评价
-        # 1 条超期（200天前）普通评价 -> 应被裁剪淘汰
-        # 1 条超期（200天前）高赞评价 (is_most_helpful=True) -> 必须永久保护！
+        # Test dataset:
+        # 1 recent ordinary review
+        # 1 expired (200 days old) ordinary review -> should be pruned
+        # 1 expired (200 days old) featured review (is_most_helpful=True) -> permanently protected
         test_records = [
             {"review_id": "101", "app_id": "200", "author": "A1", "title": "Recent", "content": "Good", "review_date": date_recent, "is_most_helpful": False},
             {"review_id": "102", "app_id": "200", "author": "A2", "title": "Old Ordinary", "content": "Old", "review_date": date_old, "is_most_helpful": False},
@@ -117,19 +117,19 @@ class TestPipeline(unittest.TestCase):
         ]
         save_reviews_to_csv(test_records, self.test_csv)
 
-        # 执行裁剪 (限制 180 天，上限 10,000，永久保留 helpful)
+        # Execute pruning (180 days, 10,000 ceiling, keep helpful)
         res = prune_reviews_data(self.test_csv, retention_days=180, max_count=10000, keep_all_helpful=True)
         self.assertEqual(res["total_before"], 3)
-        self.assertEqual(res["total_after"], 2)  # 淘汰了 1 条普通超期评价
+        self.assertEqual(res["total_after"], 2)  # Pruned 1 expired ordinary review
         self.assertEqual(res["pruned_count"], 1)
         self.assertEqual(res["helpful_retained"], 1)
 
     def test_game_item_filter(self):
-        # 游戏品类 ID 6014 或名称包含游戏
+        # Game genre ID 6014 or containing game keywords
         self.assertTrue(is_game_item(["6014"], ["Games"]))
         self.assertTrue(is_game_item(["7001"], ["Action Games"]))
         self.assertTrue(is_game_item(["1234"], ["角色扮演游戏"]))
-        # 普通纯应用
+        # Non-game apps
         self.assertFalse(is_game_item(["6005"], ["Social Networking"]))
         self.assertFalse(is_game_item(["6007"], ["Productivity"]))
 
@@ -152,39 +152,39 @@ class TestPipeline(unittest.TestCase):
         self.assertFalse(os.path.exists(os.path.join(rankings_dir, old_name)))
 
     def test_overflow_risk_detection(self):
-        # 1. 达到上限且新增 >= 阈值 -> 触发告警
+        # 1. Reaching ceiling and additions >= threshold -> triggers alert
         msg1 = check_overflow_risk("Muse", "6760173601", added_count=450, hit_ceiling=True, threshold=300)
         self.assertIsNotNone(msg1)
         self.assertIn("6760173601", msg1)
         self.assertIn("450", msg1)
 
-        # 2. 达到上限但新增很小 (大部分是老评论重查) -> 不虚假告警
+        # 2. Reaching ceiling but few additions (mostly re-crawled existing reviews) -> no alert
         msg2 = check_overflow_risk("Muse", "6760173601", added_count=10, hit_ceiling=True, threshold=300)
         self.assertIsNone(msg2)
 
-        # 3. 未触碰 500 条上限 (即使有少量新增) -> 不告警
+        # 3. Not hitting 500-review ceiling -> no alert
         msg3 = check_overflow_risk("Muse", "6760173601", added_count=200, hit_ceiling=False, threshold=300)
         self.assertIsNone(msg3)
 
     def test_get_review_filename(self):
-        # 单国家英文名
+        # Single country English name
         fn1 = get_review_filename("6448311069", "ChatGPT", ["us"])
         self.assertEqual(fn1, "reviews_6448311069_ChatGPT_us.csv")
 
-        # 带空格多词
+        # Multi-word name with spaces
         fn2 = get_review_filename("6473753684", "Claude by Anthropic", ["us"])
         self.assertEqual(fn2, "reviews_6473753684_Claude_by_Anthropic_us.csv")
 
-        # 中文与括号
+        # Name with non-ASCII and parentheses
         fn3 = get_review_filename("6738049229", "Kling AI (可灵国际版)", ["us"])
         self.assertEqual(fn3, "reviews_6738049229_Kling_AI_可灵国际版_us.csv")
 
-        # 多国家
+        # Multi-country
         fn4 = get_review_filename("6737597349", "DeepSeek", ["cn", "us"])
         self.assertEqual(fn4, "reviews_6737597349_DeepSeek_cn_us.csv")
 
     def test_build_reviews_commit_message(self):
-        # 1. 正常多应用更新：按新增数量倒序排列，并在超出限制时折叠
+        # 1. Multi-app update: sorted descending by added count, collapsed when exceeding limit
         stats_many = [
             {"name": "通义千问", "added": 10, "pruned": 0},
             {"name": "ChatGPT", "added": 110, "pruned": 0},
@@ -195,23 +195,21 @@ class TestPipeline(unittest.TestCase):
         msg = build_reviews_commit_message(stats_many)
         lines = msg.split("\n")
         title = lines[0]
-        # 标题应当包含前置的高频应用，且以英文标注折叠应用数
         self.assertTrue(title.startswith("chore(data): +110 ChatGPT, +78 DeepSeek"))
         self.assertIn("(+2 more)", title)
         self.assertTrue(title.endswith("[skip ci]"))
         self.assertLessEqual(len(title), 72)
-        # 正文应当以英文说明按数量倒序的所有应用
         self.assertIn("Review update summary (sorted by new reviews):", msg)
         self.assertIn("- ChatGPT: +110", msg)
         self.assertIn("- DeepSeek: +78", msg)
         self.assertIn("- 通义千问: +10", msg)
 
-        # 2. 单个应用更新
+        # 2. Single app update
         stats_single = [{"name": "ChatGPT", "added": 15, "pruned": 0}]
         msg_single = build_reviews_commit_message(stats_single)
         self.assertEqual(msg_single.split("\n")[0], "chore(data): +15 ChatGPT [skip ci]")
 
-        # 3. 仅有生命周期裁剪（新增为 0）
+        # 3. Lifecycle pruning only (added is 0)
         stats_prune = [
             {"name": "可灵AI (国内版)", "added": 0, "pruned": 2},
             {"name": "ChatGPT", "added": 0, "pruned": 0}
@@ -220,11 +218,10 @@ class TestPipeline(unittest.TestCase):
         self.assertIn("chore(data): prune expired reviews (-2 可灵AI (国内版)) [skip ci]", msg_prune)
         self.assertIn("pruned 2 expired review(s)", msg_prune)
 
-        # 4. 无任何变动
+        # 4. No changes
         stats_empty = [{"name": "ChatGPT", "added": 0, "pruned": 0}]
         msg_empty = build_reviews_commit_message(stats_empty)
         self.assertEqual(msg_empty, "chore(data): auto-update App Store reviews [skip ci]")
-
 
 
 if __name__ == "__main__":
