@@ -8,3 +8,4 @@ htmlcov/
 .venv/
 venv/
 ENV/
+.commit_msg

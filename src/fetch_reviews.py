@@ -282,7 +282,60 @@ def get_review_filename(app_id: str, app_name: str, countries: Optional[List[str
     return f"reviews_{app_id}_{safe_name}_{region_str}.csv"
 
 
-def run_reviews_pipeline(config: Dict[str, Any]) -> None:
+def build_reviews_commit_message(stats: List[Dict[str, Any]]) -> str:
+    """
+    生成规范、简洁且可追溯的 Git Commit Message（除应用名外全英文）：
+    1. 按新增评价数量降序排列；
+    2. 标题简洁（控制在 72 字符以内），若应用过多自动折叠省略（如：+110 ChatGPT, +78 DeepSeek (+8 more) [skip ci]）；
+    3. 正文列出所有变动应用的完整更新详情；
+    4. 若仅有生命周期裁剪（新增为0），生成清理过期评价摘要。
+    """
+    added_apps = [s for s in stats if s.get("added", 0) > 0]
+    added_apps.sort(key=lambda x: x["added"], reverse=True)
+
+    if not added_apps:
+        pruned_apps = [s for s in stats if s.get("pruned", 0) > 0]
+        pruned_apps.sort(key=lambda x: x["pruned"], reverse=True)
+        if pruned_apps:
+            p_items = [f"-{p['pruned']} {p['name']}" for p in pruned_apps[:2]]
+            remaining = len(pruned_apps) - len(p_items)
+            suffix = f" and {remaining} more" if remaining > 0 else ""
+            title = f"chore(data): prune expired reviews ({', '.join(p_items)}{suffix}) [skip ci]"
+            body_lines = ["Review retention cleanup:"]
+            for p in pruned_apps:
+                body_lines.append(f"- {p['name']}: pruned {p['pruned']} expired review(s)")
+            return f"{title}\n\n" + "\n".join(body_lines)
+        return "chore(data): auto-update App Store reviews [skip ci]"
+
+    total_apps = len(added_apps)
+    shown = []
+
+    for app in added_apps:
+        item = f"+{app['added']} {app['name']}"
+        test_shown = shown + [item]
+        remaining = total_apps - len(test_shown)
+        suffix = f" (+{remaining} more) [skip ci]" if remaining > 0 else " [skip ci]"
+        test_title = f"chore(data): {', '.join(test_shown)}{suffix}"
+
+        # 超过 3 个应用或标题长度超过 72 字符时停止追加到标题
+        if len(test_shown) > 3 or (len(test_title) > 72 and len(shown) >= 1):
+            break
+        shown.append(item)
+
+    remaining = total_apps - len(shown)
+    if remaining > 0:
+        title = f"chore(data): {', '.join(shown)} (+{remaining} more) [skip ci]"
+    else:
+        title = f"chore(data): {', '.join(shown)} [skip ci]"
+
+    body_lines = ["Review update summary (sorted by new reviews):"]
+    for app in added_apps:
+        body_lines.append(f"- {app['name']}: +{app['added']}")
+
+    return f"{title}\n\n" + "\n".join(body_lines)
+
+
+def run_reviews_pipeline(config: Dict[str, Any]) -> List[Dict[str, Any]]:
     """
     根据配置全流程执行应用评价监控、入库与生命周期裁剪，并触发满载告警
     """
@@ -297,10 +350,12 @@ def run_reviews_pipeline(config: Dict[str, Any]) -> None:
     monitored_apps = config.get("monitored_apps", [])
     if not monitored_apps:
         print("⚠️ 未配置监控应用，跳过评价监控流程。")
-        return
+        return []
 
     data_dir = os.path.join(os.getcwd(), "data")
     os.makedirs(data_dir, exist_ok=True)
+
+    pipeline_stats = []
 
     for app in monitored_apps:
         app_id = str(app.get("id", "")).strip()
@@ -345,6 +400,12 @@ def run_reviews_pipeline(config: Dict[str, Any]) -> None:
             keep_all_helpful=keep_all_helpful
         )
 
+        pipeline_stats.append({
+            "name": app_name,
+            "added": report.get("added_count", 0),
+            "pruned": prune_report.get("pruned_count", 0)
+        })
+
         print("\n" + "-" * 50)
         print(f"📊 {app_name} 数据统计报告")
         print("-" * 50)
@@ -357,6 +418,18 @@ def run_reviews_pipeline(config: Dict[str, Any]) -> None:
         if overflow_stats.get("hit_ceiling"):
             print(f"⚠️ 满载监控状态: 触发 500 条上限 ({'; '.join(overflow_stats['ceiling_details'])})")
         print("-" * 50)
+
+    # 生成规范的 commit message 并写入 .commit_msg 供 CI 自动化提交
+    commit_msg = build_reviews_commit_message(pipeline_stats)
+    commit_msg_path = os.path.join(os.getcwd(), ".commit_msg")
+    try:
+        with open(commit_msg_path, "w", encoding="utf-8") as f:
+            f.write(commit_msg)
+        print(f"\n📝 已生成 Git 提交信息: {commit_msg.splitlines()[0]}")
+    except Exception as e:
+        print(f"⚠️ 写入 .commit_msg 失败: {e}", file=sys.stderr)
+
+    return pipeline_stats
 
 
 if __name__ == "__main__":

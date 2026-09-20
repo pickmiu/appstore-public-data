@@ -21,7 +21,7 @@ from src.pipeline import (
     CSV_COLUMNS
 )
 from src.fetch_rankings import is_game_item, prune_historical_rankings
-from src.fetch_reviews import check_overflow_risk, get_review_filename
+from src.fetch_reviews import check_overflow_risk, get_review_filename, build_reviews_commit_message
 
 
 class TestPipeline(unittest.TestCase):
@@ -182,6 +182,49 @@ class TestPipeline(unittest.TestCase):
         # 多国家
         fn4 = get_review_filename("6737597349", "DeepSeek", ["cn", "us"])
         self.assertEqual(fn4, "reviews_6737597349_DeepSeek_cn_us.csv")
+
+    def test_build_reviews_commit_message(self):
+        # 1. 正常多应用更新：按新增数量倒序排列，并在超出限制时折叠
+        stats_many = [
+            {"name": "通义千问", "added": 10, "pruned": 0},
+            {"name": "ChatGPT", "added": 110, "pruned": 0},
+            {"name": "DeepSeek", "added": 78, "pruned": 0},
+            {"name": "豆包", "added": 24, "pruned": 0},
+            {"name": "Grok AI", "added": 21, "pruned": 0},
+        ]
+        msg = build_reviews_commit_message(stats_many)
+        lines = msg.split("\n")
+        title = lines[0]
+        # 标题应当包含前置的高频应用，且以英文标注折叠应用数
+        self.assertTrue(title.startswith("chore(data): +110 ChatGPT, +78 DeepSeek"))
+        self.assertIn("(+2 more)", title)
+        self.assertTrue(title.endswith("[skip ci]"))
+        self.assertLessEqual(len(title), 72)
+        # 正文应当以英文说明按数量倒序的所有应用
+        self.assertIn("Review update summary (sorted by new reviews):", msg)
+        self.assertIn("- ChatGPT: +110", msg)
+        self.assertIn("- DeepSeek: +78", msg)
+        self.assertIn("- 通义千问: +10", msg)
+
+        # 2. 单个应用更新
+        stats_single = [{"name": "ChatGPT", "added": 15, "pruned": 0}]
+        msg_single = build_reviews_commit_message(stats_single)
+        self.assertEqual(msg_single.split("\n")[0], "chore(data): +15 ChatGPT [skip ci]")
+
+        # 3. 仅有生命周期裁剪（新增为 0）
+        stats_prune = [
+            {"name": "可灵AI (国内版)", "added": 0, "pruned": 2},
+            {"name": "ChatGPT", "added": 0, "pruned": 0}
+        ]
+        msg_prune = build_reviews_commit_message(stats_prune)
+        self.assertIn("chore(data): prune expired reviews (-2 可灵AI (国内版)) [skip ci]", msg_prune)
+        self.assertIn("pruned 2 expired review(s)", msg_prune)
+
+        # 4. 无任何变动
+        stats_empty = [{"name": "ChatGPT", "added": 0, "pruned": 0}]
+        msg_empty = build_reviews_commit_message(stats_empty)
+        self.assertEqual(msg_empty, "chore(data): auto-update App Store reviews [skip ci]")
+
 
 
 if __name__ == "__main__":
