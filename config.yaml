@@ -57,6 +57,15 @@ monitored_apps:
     name: "DeepSeek"
     countries: ["cn", "us"]
 
+  # --- 电商业务标杆 (拼多多系 / 国内与跨境出海) ---
+  - id: "1044283059"
+    name: "拼多多"
+    countries: ["cn"]
+  - id: "1641486558"
+    name: "Temu"
+    countries: ["us", "gb", "de", "jp", "kr", "mx"]
+
+
 # 3. 榜单快照配置 (每日北京时间 00:00 执行)
 rankings:
   # 监控地区列表 (默认仅抓取中国区与美国区，支持按需扩展)
