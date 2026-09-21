@@ -2,6 +2,8 @@
 
 An automated App Store public data monitoring and archival system powered by free GitHub Actions Runners. Persistently records monitored app user reviews and daily non-game ranking snapshots in CSV and Markdown formats, with all data synced directly to the GitHub repository.
 
+> **Note**: Data collection started on September 20, 2026.
+
 ---
 
 ## Key Features
