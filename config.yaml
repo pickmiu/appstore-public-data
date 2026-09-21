@@ -76,6 +76,12 @@ monitored_apps:
   - id: "1641486558"
     name: "Temu"
     countries: ["us", "gb", "de", "jp", "kr", "mx"]
+  - id: "878577184"
+    name: "SHEIN"
+    countries: ["us", "gb", "de", "jp", "kr", "mx"]
+  - id: "371294472"
+    name: "Shopify"
+    countries: ["us", "ca", "gb"]
   - id: "297606951"
     name: "Amazon"
     countries: ["us"]
