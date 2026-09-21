@@ -26,6 +26,9 @@ monitored_apps:
   - id: "6473753684"
     name: "Claude by Anthropic"
     countries: ["us"]
+  - id: "6477489729"
+    name: "Google Gemini"
+    countries: ["us"]
 
   # --- Vertical Domains (Search, Social, Video, Creativity) ---
   - id: "1668000334"
@@ -95,6 +98,14 @@ monitored_apps:
   - id: "374254473"
     name: "Amazon"
     countries: ["jp"]
+
+  # --- Global Social, Messaging & Communication ---
+  - id: "414478124"
+    name: "微信"
+    countries: ["cn"]
+  - id: "310633997"
+    name: "WhatsApp"
+    countries: ["us"]
 
 
 
