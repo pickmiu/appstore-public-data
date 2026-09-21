@@ -33,12 +33,6 @@ monitored_apps:
   - id: "6760173601"
     name: "Muse from Meta"
     countries: ["us"]
-  - id: "6738049229"
-    name: "Kling AI (可灵国际版)"
-    countries: ["us"]
-  - id: "6670396916"
-    name: "可灵AI (国内版)"
-    countries: ["cn"]
   - id: "1671705818"
     name: "Character AI"
     countries: ["us"]
@@ -50,9 +44,6 @@ monitored_apps:
   - id: "6466733523"
     name: "通义千问"
     countries: ["cn"]
-  - id: "6474233312"
-    name: "Kimi"
-    countries: ["cn", "us"]
   - id: "6737597349"
     name: "DeepSeek"
     countries: ["cn", "us"]

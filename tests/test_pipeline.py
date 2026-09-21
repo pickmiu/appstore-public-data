@@ -199,8 +199,8 @@ class TestPipeline(unittest.TestCase):
         self.assertEqual(fn2, "reviews_6473753684_Claude_by_Anthropic_us.csv")
 
         # Name with non-ASCII and parentheses
-        fn3 = get_review_filename("6738049229", "Kling AI (可灵国际版)", ["us"])
-        self.assertEqual(fn3, "reviews_6738049229_Kling_AI_可灵国际版_us.csv")
+        fn3 = get_review_filename("1529124445", "CapCut (剪映海外版)", ["us"])
+        self.assertEqual(fn3, "reviews_1529124445_CapCut_剪映海外版_us.csv")
 
         # Multi-country
         fn4 = get_review_filename("6737597349", "DeepSeek", ["cn", "us"])
@@ -214,7 +214,7 @@ class TestPipeline(unittest.TestCase):
             {"name": "DeepSeek", "added": 78, "pruned": 0},
             {"name": "豆包", "added": 24, "pruned": 0},
             {"name": "Grok AI", "added": 21, "pruned": 0},
-            {"name": "可灵AI (国内版)", "added": 0, "pruned": 0},  # Filtered expired app, no actual changes
+            {"name": "讯飞星火", "added": 0, "pruned": 0},  # Filtered expired app, no actual changes
         ]
         msg = build_reviews_commit_message(stats_many)
         lines = msg.split("\n")
@@ -227,7 +227,7 @@ class TestPipeline(unittest.TestCase):
         self.assertIn("- ChatGPT: +110", msg)
         self.assertIn("- DeepSeek: +78", msg)
         self.assertIn("- 通义千问: +10", msg)
-        self.assertNotIn("可灵AI", msg)
+        self.assertNotIn("讯飞星火", msg)
 
         # 2. Single app update
         stats_single = [{"name": "ChatGPT", "added": 15, "pruned": 0}]
@@ -236,11 +236,11 @@ class TestPipeline(unittest.TestCase):
 
         # 3. Lifecycle pruning only (added is 0)
         stats_prune = [
-            {"name": "可灵AI (国内版)", "added": 0, "pruned": 2},
+            {"name": "讯飞星火", "added": 0, "pruned": 2},
             {"name": "ChatGPT", "added": 0, "pruned": 0}
         ]
         msg_prune = build_reviews_commit_message(stats_prune)
-        self.assertIn("chore(data): prune expired reviews (-2 可灵AI (国内版)) [skip ci]", msg_prune)
+        self.assertIn("chore(data): prune expired reviews (-2 讯飞星火) [skip ci]", msg_prune)
         self.assertIn("pruned 2 expired review(s)", msg_prune)
 
         # 4. No changes
