@@ -5,8 +5,9 @@
 # 1. Data Retention & Lifecycle Rules
 retention:
   reviews_days: 180            # Default retention for reviews in days (half a year)
-  reviews_max_count: 100000    # Maximum latest reviews per application (100k)
+  reviews_max_count: 1000000   # Maximum latest reviews per application (1M)
   keep_all_helpful: true       # Permanently retain all "Most Helpful" reviews (exempt from expiry)
+  chunk_size_mb: 45            # Maximum chunk size in MB (splits into _partN.csv when exceeded)
   rankings_days: 180           # Default retention for ranking snapshots in days (half a year)
 
 # 2. Monitored Applications List (Incremental Review Monitoring)

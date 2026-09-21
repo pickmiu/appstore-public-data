@@ -57,8 +57,9 @@ All system parameters are controlled from a single configuration file:
 # 1. Global Retention & Lifecycle Rules
 retention:
   reviews_days: 180            # Review retention in days (half a year)
-  reviews_max_count: 10000     # Max standard reviews per app
+  reviews_max_count: 1000000   # Max standard reviews per app (1M)
   keep_all_helpful: true       # Permanently retain all most helpful reviews
+  chunk_size_mb: 45            # Max size per chunk in MB (auto-splits into _partN.csv)
   rankings_days: 180           # Ranking snapshot retention in days
 
 # 2. Monitored Applications List
@@ -124,8 +125,19 @@ Every review record is aligned into the following CSV schema:
 At the end of each ingestion run, `prune_reviews_data()` runs:
 1. **Protection Pool**: Extracts all records where `is_most_helpful == True`. These in-depth reviews are **permanently exempt from cleanup**.
 2. **Time Window Filter**: Discards ordinary reviews older than 180 days based on UTC timestamps.
-3. **Volume Truncation**: Sorts remaining ordinary reviews by `review_date` descending and retains the top 10,000.
+3. **Volume Truncation**: Sorts remaining ordinary reviews by `review_date` descending and retains the top 1,000,000.
 4. **Re-merging & Writeback**: Merges protected and retained reviews, writing back to CSV with `UTF-8 with BOM` for Excel compatibility.
+
+### 4.4 Automatic File Chunking & Roll-Over Architecture
+
+To strictly safeguard against GitHub's 50 MB warning threshold and 100 MB push rejection ceiling:
+1. **Safety Threshold**: When an application's review CSV reaches or exceeds `chunk_size_mb` (default: 45 MB, configurable in `config.yaml`), the engine triggers an automatic roll-over.
+2. **Naming Convention**:
+   - Initial state (< 45 MB): `reviews_{app_id}_{name}_{regions}.csv` (fully backward compatible).
+   - Once threshold is reached: Base file rolls to `reviews_{app_id}_{name}_{regions}_part1.csv` and is frozen. Active writes continue into `_part2.csv`, `_part3.csv`, etc.
+   - Each part is an independent, valid CSV containing the standard UTF-8 BOM and schema headers.
+3. **Cross-Chunk Global Deduplication**: `load_all_existing_review_keys()` scans all existing chunks of the target application in memory, guaranteeing global uniqueness across parts.
+4. **Multi-Chunk Lifecycle Pruning**: Pruning purges expired ordinary reviews across all parts while preserving all `is_most_helpful` reviews and recycling obsolete trailing parts.
 
 ---
 

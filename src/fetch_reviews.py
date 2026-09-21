@@ -337,8 +337,9 @@ def run_reviews_pipeline(config: Dict[str, Any]) -> List[Dict[str, Any]]:
     """
     retention_cfg = config.get("retention", {})
     retention_days = int(retention_cfg.get("reviews_days", 180))
-    max_count = int(retention_cfg.get("reviews_max_count", 10000))
+    max_count = int(retention_cfg.get("reviews_max_count", 100000))
     keep_all_helpful = bool(retention_cfg.get("keep_all_helpful", True))
+    chunk_size_mb = float(retention_cfg.get("chunk_size_mb", 45.0))
 
     monitoring_cfg = config.get("monitoring", {})
     overflow_threshold = int(monitoring_cfg.get("overflow_alert_threshold", 300))
@@ -372,13 +373,14 @@ def run_reviews_pipeline(config: Dict[str, Any]) -> List[Dict[str, Any]]:
         # 1. Fetch multi-channel reviews and overflow stats
         raw_reviews, overflow_stats = monitor_app_reviews(app_id, app_name, countries, return_stats=True)
 
-        # 2. Incremental save with fingerprint deduplication and retention pre-filtering
+        # 2. Incremental save with fingerprint deduplication, chunk rolling, and retention pre-filtering
         report = save_reviews_to_csv(
             raw_reviews,
             output_csv,
             default_source="itunes_rss",
             retention_days=retention_days,
-            keep_all_helpful=keep_all_helpful
+            keep_all_helpful=keep_all_helpful,
+            chunk_size_mb=chunk_size_mb
         )
 
         # 3. Check overflow and missed reviews risk
@@ -394,12 +396,13 @@ def run_reviews_pipeline(config: Dict[str, Any]) -> List[Dict[str, Any]]:
             full_msg = f"{warn_msg} (Ceiling details: {details})"
             emit_github_action_warning("App Store Review Overflow Alert (Missed Risk)", full_msg)
 
-        # 4. Data lifecycle pruning (180 days / 10k ceiling / mostHelpful protection)
+        # 4. Data lifecycle pruning (180 days / 100k ceiling / mostHelpful protection / multi-chunk support)
         prune_report = prune_reviews_data(
             output_csv,
             retention_days=retention_days,
             max_count=max_count,
-            keep_all_helpful=keep_all_helpful
+            keep_all_helpful=keep_all_helpful,
+            chunk_size_mb=chunk_size_mb
         )
 
         # Disambiguate app display name if multiple apps share the same name (e.g. regional Amazon apps)
@@ -412,10 +415,16 @@ def run_reviews_pipeline(config: Dict[str, Any]) -> List[Dict[str, Any]]:
             "pruned": prune_report.get("pruned_count", 0)
         })
 
+        chunk_files = report.get("chunk_files", [output_csv])
         print("\n" + "-" * 50)
         print(f"📊 {app_name} Data Report")
         print("-" * 50)
-        print(f"📁 Target file: data/{filename}")
+        if len(chunk_files) > 1:
+            chunk_names = ", ".join([os.path.basename(f) for f in chunk_files])
+            print(f"📁 Target files ({len(chunk_files)} parts): {chunk_names}")
+            print(f"✍️ Active chunk: {os.path.basename(report.get('active_path', output_csv))}")
+        else:
+            print(f"📁 Target file: data/{filename}")
         print(f"📥 Candidate reviews: {report['input_count']}")
         print(f"✨ Valid added: {report['added_count']}")
         print(f"⏭️ Fingerprint deduplicated: {report.get('dedup_skipped_count', report['skipped_count'])}")

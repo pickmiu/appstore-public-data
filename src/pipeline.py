@@ -212,21 +212,137 @@ def load_existing_fingerprints(csv_path: str) -> Set[str]:
     return fps
 
 
+def get_app_chunk_prefix(csv_path: str) -> str:
+    """Extract base prefix without .csv extension or _partN suffix."""
+    path_no_ext = csv_path[:-4] if csv_path.endswith(".csv") else csv_path
+    return re.sub(r"_part\d+$", "", path_no_ext)
+
+
+def get_app_chunk_files(base_path: str) -> List[str]:
+    """
+    Find all chunk/part files associated with a base CSV path.
+    If part files (_part1.csv, _part2.csv, ...) exist, returns them sorted by part index.
+    If only the base file exists, returns [base_file].
+    If none exists, returns [].
+    """
+    prefix = get_app_chunk_prefix(base_path)
+    dir_name = os.path.dirname(prefix) or "."
+    base_file = f"{prefix}.csv"
+
+    part_files = []
+    prefix_base = os.path.basename(prefix)
+    part_pattern = re.compile(rf"^{re.escape(prefix_base)}_part(\d+)\.csv$")
+
+    if os.path.exists(dir_name):
+        for fname in os.listdir(dir_name):
+            m = part_pattern.match(fname)
+            if m:
+                part_files.append((int(m.group(1)), os.path.join(dir_name, fname)))
+
+    if part_files:
+        part_files.sort(key=lambda x: x[0])
+        return [f for _, f in part_files]
+
+    if os.path.exists(base_file):
+        return [base_file]
+
+    return []
+
+
+def get_active_chunk_file(base_path: str, chunk_size_mb: float = 45.0) -> Tuple[str, int]:
+    """
+    Determine the current active (writable) file for appending reviews.
+    Threshold is converted to bytes (chunk_size_mb * 1024 * 1024).
+
+    Rules:
+    1. If part files exist (_part1.csv, _part2.csv, ...):
+       Check highest numbered part M:
+       - If size < threshold: active file is part M.
+       - If size >= threshold: roll to part M+1.
+    2. If no part files exist, but base_file exists:
+       - If size < threshold: active file is base_file (part 0).
+       - If size >= threshold:
+         Rename base_file -> prefix + "_part1.csv".
+         Active file is prefix + "_part2.csv" (part 2).
+    3. If neither exists:
+       - Active file is base_file (part 0).
+
+    Returns:
+      (active_filepath, part_number)
+    """
+    prefix = get_app_chunk_prefix(base_path)
+    dir_name = os.path.dirname(prefix) or "."
+    base_file = f"{prefix}.csv"
+    chunk_size_bytes = int(chunk_size_mb * 1024 * 1024)
+
+    part_files = []
+    prefix_base = os.path.basename(prefix)
+    part_pattern = re.compile(rf"^{re.escape(prefix_base)}_part(\d+)\.csv$")
+
+    if os.path.exists(dir_name):
+        for fname in os.listdir(dir_name):
+            m = part_pattern.match(fname)
+            if m:
+                part_files.append((int(m.group(1)), os.path.join(dir_name, fname)))
+
+    if part_files:
+        part_files.sort(key=lambda x: x[0])
+        last_num, last_path = part_files[-1]
+        if os.path.exists(last_path) and os.path.getsize(last_path) >= chunk_size_bytes:
+            next_num = last_num + 1
+            return os.path.join(dir_name, f"{prefix_base}_part{next_num}.csv"), next_num
+        return last_path, last_num
+
+    if os.path.exists(base_file):
+        if os.path.getsize(base_file) >= chunk_size_bytes:
+            part1_file = os.path.join(dir_name, f"{prefix_base}_part1.csv")
+            part2_file = os.path.join(dir_name, f"{prefix_base}_part2.csv")
+            os.rename(base_file, part1_file)
+            return part2_file, 2
+        return base_file, 0
+
+    return base_file, 0
+
+
+def load_all_existing_review_keys(base_path: str) -> Tuple[Set[str], Set[str]]:
+    """
+    Read (review_id set, fingerprint set) across ALL chunk files for the given app path.
+    Guarantees global uniqueness across all historical and active chunks.
+    """
+    files = get_app_chunk_files(base_path)
+    if not files:
+        prefix = get_app_chunk_prefix(base_path)
+        base_file = f"{prefix}.csv"
+        if os.path.exists(base_file):
+            files = [base_file]
+
+    all_ids = set()
+    all_fps = set()
+    for f in files:
+        r_ids, fps = load_existing_review_keys(f)
+        all_ids.update(r_ids)
+        all_fps.update(fps)
+    return all_ids, all_fps
+
+
 def save_reviews_to_csv(
     raw_reviews: List[Dict[str, Any]],
     output_path: str,
     default_source: str = "itunes_rss",
     retention_days: Optional[int] = None,
-    keep_all_helpful: bool = True
+    keep_all_helpful: bool = True,
+    chunk_size_mb: Optional[float] = 45.0
 ) -> Dict[str, Any]:
     """
-    Unified incremental save: Clean -> Retention pre-filter -> Deduplication -> Append to CSV.
+    Unified incremental save: Clean -> Retention pre-filter -> Global Deduplication -> Write to active chunk.
+    Automatically rolls over to _partN.csv if file size reaches chunk_size_mb threshold.
 
     :param raw_reviews: List of raw review dictionaries to save
-    :param output_path: Destination CSV filepath
+    :param output_path: Destination CSV base filepath
     :param default_source: Default source identifier
     :param retention_days: Optional retention cutoff in days (ordinary reviews older than this are skipped)
     :param keep_all_helpful: Whether to exempt most helpful / featured reviews from retention cutoff
+    :param chunk_size_mb: Chunk size threshold in MB (default 45MB)
     :return: Operation statistics summary dictionary
     """
     dir_name = os.path.dirname(output_path)
@@ -238,8 +354,8 @@ def save_reviews_to_csv(
         cutoff_date = datetime.now(timezone.utc) - timedelta(days=retention_days)
         cutoff_iso = cutoff_date.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    existing_ids, existing_fps = load_existing_review_keys(output_path)
-    file_exists = os.path.exists(output_path) and os.path.getsize(output_path) > 0
+    # Load existing keys globally across all parts of this app
+    existing_ids, existing_fps = load_all_existing_review_keys(output_path)
 
     new_records = []
     skipped_count = 0
@@ -252,7 +368,7 @@ def save_reviews_to_csv(
         rev_id = str(cleaned.get("review_id", "")).strip()
         fp = cleaned["fingerprint"]
 
-        # 1. Pre-filter expired ordinary reviews before ingestion to avoid phantom adds and immediate pruning churn
+        # 1. Pre-filter expired ordinary reviews before ingestion
         if cutoff_iso and not (keep_all_helpful and cleaned.get("is_most_helpful")):
             r_date = cleaned.get("review_date", "")
             if r_date and r_date < cutoff_iso:
@@ -276,18 +392,47 @@ def save_reviews_to_csv(
         new_records.append(cleaned)
         rating_counts[cleaned["rating"]] = rating_counts.get(cleaned["rating"], 0) + 1
 
-    # Append to CSV (UTF-8 with BOM for Excel friendliness)
+    # Write records with chunk rolling support
     if new_records:
-        write_mode = "a" if file_exists else "w"
-        with open(output_path, mode=write_mode, encoding="utf-8-sig", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=CSV_COLUMNS)
-            if not file_exists:
-                writer.writeheader()
-            for record in new_records:
-                writer.writerow(record)
+        if chunk_size_mb is None or chunk_size_mb <= 0:
+            # Unchunked mode (legacy direct write)
+            file_exists = os.path.exists(output_path) and os.path.getsize(output_path) > 0
+            write_mode = "a" if file_exists else "w"
+            with open(output_path, mode=write_mode, encoding="utf-8-sig", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=CSV_COLUMNS)
+                if not file_exists:
+                    writer.writeheader()
+                for record in new_records:
+                    writer.writerow(record)
+        else:
+            chunk_size_bytes = int(chunk_size_mb * 1024 * 1024)
+            records_to_write = list(new_records)
+            while records_to_write:
+                active_file, _ = get_active_chunk_file(output_path, chunk_size_mb=chunk_size_mb)
+                file_exists = os.path.exists(active_file) and os.path.getsize(active_file) > 0
+
+                with open(active_file, mode="a" if file_exists else "w", encoding="utf-8-sig", newline="") as f:
+                    writer = csv.DictWriter(f, fieldnames=CSV_COLUMNS)
+                    if not file_exists:
+                        writer.writeheader()
+                        f.flush()
+
+                    while records_to_write:
+                        record = records_to_write.pop(0)
+                        writer.writerow(record)
+                        if f.tell() >= chunk_size_bytes and records_to_write:
+                            f.flush()
+                            break
+
+    chunk_files = get_app_chunk_files(output_path)
+    if not chunk_files:
+        chunk_files = [output_path]
+    active_path, _ = get_active_chunk_file(output_path, chunk_size_mb=chunk_size_mb or 45.0) if chunk_size_mb else (output_path, 0)
 
     return {
         "output_path": output_path,
+        "active_path": active_path,
+        "chunk_files": chunk_files,
         "input_count": len(raw_reviews),
         "added_count": len(new_records),
         "skipped_count": skipped_count,
@@ -301,24 +446,31 @@ def save_reviews_to_csv(
 def prune_reviews_data(
     csv_path: str,
     retention_days: int = 180,
-    max_count: int = 10000,
-    keep_all_helpful: bool = True
+    max_count: int = 100000,
+    keep_all_helpful: bool = True,
+    chunk_size_mb: Optional[float] = 45.0
 ) -> Dict[str, Any]:
     """
-    Execute data lifecycle pruning on reviews CSV:
-    1. Extract all is_most_helpful == True reviews into a permanent protection pool (exempt from 180-day & 10k limits).
-    2. Filter out ordinary reviews older than retention_days (180 days).
-    3. Sort remaining ordinary reviews by review_date descending, retaining up to max_count (10,000).
-    4. Merge protected reviews with retained ordinary reviews, write back to CSV, preserving timeline order.
+    Execute data lifecycle pruning across all chunk files for an app:
+    1. Extract all is_most_helpful == True reviews into a permanent protection pool.
+    2. Filter out ordinary reviews older than retention_days.
+    3. Sort remaining ordinary reviews by review_date descending, retaining up to max_count.
+    4. Write back into chunked files respecting chunk_size_mb, cleaning up unneeded empty parts.
     """
-    if not os.path.exists(csv_path) or os.path.getsize(csv_path) == 0:
-        return {"csv_path": csv_path, "status": "file_empty_or_not_found"}
+    chunk_files = get_app_chunk_files(csv_path)
+    if not chunk_files:
+        if os.path.exists(csv_path) and os.path.getsize(csv_path) > 0:
+            chunk_files = [csv_path]
+        else:
+            return {"csv_path": csv_path, "status": "file_empty_or_not_found"}
 
     all_records = []
-    with open(csv_path, mode="r", encoding="utf-8-sig", newline="") as f:
-        reader = csv.DictReader(line.replace("\x00", "") for line in f)
-        for row in reader:
-            all_records.append(row)
+    for fpath in chunk_files:
+        if os.path.exists(fpath) and os.path.getsize(fpath) > 0:
+            with open(fpath, mode="r", encoding="utf-8-sig", newline="") as f:
+                reader = csv.DictReader(line.replace("\x00", "") for line in f)
+                for row in reader:
+                    all_records.append(row)
 
     total_before = len(all_records)
     if total_before == 0:
@@ -360,21 +512,89 @@ def prune_reviews_data(
             seen_fps.add(fp)
             combined_records.append(r)
 
-    # Final sort descending by review date
     combined_records.sort(key=lambda x: x.get("review_date", ""), reverse=True)
-
-    # Write back to CSV
-    with open(csv_path, mode="w", encoding="utf-8-sig", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=CSV_COLUMNS)
-        writer.writeheader()
-        for r in combined_records:
-            writer.writerow(r)
-
     total_after = len(combined_records)
     pruned_count = total_before - total_after
 
+    # Write back: if single file and not chunked and no pruning occurred, avoid touching disk
+    prefix = get_app_chunk_prefix(csv_path)
+    dir_name = os.path.dirname(prefix) or "."
+    prefix_base = os.path.basename(prefix)
+    chunk_size_bytes = int(chunk_size_mb * 1024 * 1024) if chunk_size_mb else 45 * 1024 * 1024
+
+    is_already_chunked = len(chunk_files) > 1 or any("_part" in f for f in chunk_files)
+    
+    # If unchunked and pruned_count == 0, keep file untouched
+    if not is_already_chunked and pruned_count == 0:
+        return {
+            "csv_path": csv_path,
+            "chunk_files": chunk_files,
+            "total_before": total_before,
+            "total_after": total_after,
+            "pruned_count": pruned_count,
+            "helpful_retained": len(helpful_pool),
+            "ordinary_retained": len(ordinary_retained)
+        }
+
+    # If single file and fits in chunk size, write directly to base file
+    if not is_already_chunked:
+        base_file = f"{prefix}.csv"
+        with open(base_file, mode="w", encoding="utf-8-sig", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=CSV_COLUMNS)
+            writer.writeheader()
+            for r in combined_records:
+                writer.writerow(r)
+        
+        # Check if writing caused it to exceed chunk_size_bytes
+        if chunk_size_mb and os.path.getsize(base_file) >= chunk_size_bytes:
+            # Roll over immediately
+            get_active_chunk_file(base_file, chunk_size_mb=chunk_size_mb)
+            chunk_files = get_app_chunk_files(base_file)
+        else:
+            chunk_files = [base_file]
+
+        return {
+            "csv_path": csv_path,
+            "chunk_files": chunk_files,
+            "total_before": total_before,
+            "total_after": total_after,
+            "pruned_count": pruned_count,
+            "helpful_retained": len(helpful_pool),
+            "ordinary_retained": len(ordinary_retained)
+        }
+
+    # Multi-chunk write back
+    part_idx = 1
+    records_left = list(combined_records)
+    used_part_files = []
+
+    while records_left or part_idx == 1:
+        part_file = os.path.join(dir_name, f"{prefix_base}_part{part_idx}.csv")
+        used_part_files.append(part_file)
+        with open(part_file, mode="w", encoding="utf-8-sig", newline="") as pf:
+            writer = csv.DictWriter(pf, fieldnames=CSV_COLUMNS)
+            writer.writeheader()
+            while records_left:
+                rec = records_left.pop(0)
+                writer.writerow(rec)
+                if pf.tell() >= chunk_size_bytes and records_left:
+                    pf.flush()
+                    part_idx += 1
+                    break
+        if not records_left:
+            break
+
+    # Clean up obsolete extra parts
+    for old_f in chunk_files:
+        if old_f not in used_part_files and os.path.exists(old_f):
+            try:
+                os.remove(old_f)
+            except OSError:
+                pass
+
     return {
         "csv_path": csv_path,
+        "chunk_files": used_part_files,
         "total_before": total_before,
         "total_after": total_after,
         "pruned_count": pruned_count,
