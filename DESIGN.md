@@ -6,7 +6,7 @@ This project provides an automated, zero-cost App Store public data monitoring a
 
 The system tracks two core categories of public data in flat text formats (CSV and Markdown):
 1. **User Reviews of Monitored Applications**: Covers key strategic storefronts (e.g., US, CN, GB, DE, JP, KR, MX), performing periodic incremental scraping, real-time sanitization, SHA-256 fingerprint deduplication, and retention management.
-2. **App Store Non-Game Rankings Snapshots**: Generated daily at 00:15 CST (16:15 UTC), capturing Top 100 non-game free apps (games strictly excluded) and Top 10 primary category rankings for target regions into Markdown snapshots, maintained for 180 days.
+2. **App Store Non-Game Rankings Snapshots**: Generated daily at 00:15 CST (16:15 UTC), capturing Top 100 non-game free apps (games strictly excluded) and Top 10 primary category rankings for target regions into Markdown snapshots, maintained for 365 days (1 year).
 
 The architecture strictly adheres to **zero heavyweight dependencies, centralized configuration, high reliability, and minimal runner consumption**.
 
@@ -56,11 +56,11 @@ All system parameters are controlled from a single configuration file:
 
 # 1. Global Retention & Lifecycle Rules
 retention:
-  reviews_days: 180            # Review retention in days (half a year)
+  reviews_days: 365            # Review retention in days (1 year)
   reviews_max_count: 1000000   # Max standard reviews per app (1M)
   keep_all_helpful: true       # Permanently retain all most helpful reviews
   chunk_size_mb: 45            # Max size per chunk in MB (auto-splits into _partN.csv)
-  rankings_days: 180           # Ranking snapshot retention in days
+  rankings_days: 365           # Ranking snapshot retention in days (1 year)
 
 # 2. Monitored Applications List
 monitored_apps:
@@ -124,7 +124,7 @@ Every review record is aligned into the following CSV schema:
 
 At the end of each ingestion run, `prune_reviews_data()` runs:
 1. **Protection Pool**: Extracts all records where `is_most_helpful == True`. These in-depth reviews are **permanently exempt from cleanup**.
-2. **Time Window Filter**: Discards ordinary reviews older than 180 days based on UTC timestamps.
+2. **Time Window Filter**: Discards ordinary reviews older than 365 days based on UTC timestamps.
 3. **Volume Truncation**: Sorts remaining ordinary reviews by `review_date` descending and retains the top 1,000,000.
 4. **Re-merging & Writeback**: Merges protected and retained reviews, writing back to CSV with `UTF-8 with BOM` for Excel compatibility.
 
@@ -160,7 +160,7 @@ To strictly safeguard against GitHub's 50 MB warning threshold and 100 MB push r
   - Since Apple secondary genres (7001~7019) are game subgenres, secondary genres are defaulted to empty (`secondary_genres: []`).
 
 ### 5.3 Snapshot Pruning
-Snapshot files older than 180 days are automatically deleted during the daily run to keep repository size lean.
+Snapshot files older than 365 days are automatically deleted during the daily run to keep repository size lean.
 
 ---
 

@@ -9,10 +9,10 @@ An automated App Store public data monitoring and archival system powered by fre
 - **Incremental Review Monitoring**: Periodically polls monitored apps for new reviews. Employs `SHA-256` content fingerprinting for instant deduplication, ensuring zero missed reviews.
 - **Data Cleaning & Quality Flagging**: Automatically sanitizes invisible control characters and excess blank lines, normalizes timestamps to ISO-8601 UTC, and flags ultra-short or promotional spam content.
 - **Lifecycle & Retention Management**:
-  - Reviews are retained for **180 days (half a year)** by default;
-  - Standard reviews are capped at **10,000 latest entries** per application;
+  - Reviews are retained for **365 days (1 year)** by default;
+  - Standard reviews are capped at **1,000,000 latest entries** per application with automatic 45MB chunking;
   - **All "Most Helpful" in-depth reviews are permanently preserved** and exempt from expiration cleanup.
-- **Daily Midnight Non-Game Rankings Snapshot**: Automatically scrapes Top 100 free apps (games strictly filtered) and Top 10 apps across primary non-game categories for China and United States every day at 00:00 CST / 16:00 UTC, outputting clean Markdown snapshots retained for 180 days.
+- **Daily Midnight Non-Game Rankings Snapshot**: Automatically scrapes Top 100 free apps (games strictly filtered) and Top 10 apps across primary non-game categories for China and United States every day at 00:00 CST / 16:00 UTC, outputting clean Markdown snapshots retained for 365 days (1 year).
 - **Centralized Configuration**: All monitored apps, regions, category codes, and retention periods are managed in [`config.yaml`](./config.yaml).
 - **Zero-Cost Operation**: Runs entirely on free GitHub Actions Runners with zero cloud server expenses, consuming under 5% of monthly free runner minutes.
 
@@ -37,7 +37,7 @@ appstore-public-data/
 │   └── fetch_rankings.py          # Rankings scraping and snapshot generation module
 ├── data/                          # Review data storage directory
 │   └── reviews_{app_id}_{name}_{region}.csv # Application reviews (UTF-8 with BOM, Excel-friendly)
-└── rankings/                      # Daily rankings snapshots (retained for 180 days)
+└── rankings/                      # Daily rankings snapshots (retained for 365 days)
     ├── 2026-09-19_cn.md           # China non-game main chart Top 100 + primary categories Top 10
     ├── 2026-09-19_us.md           # US non-game main chart Top 100 + primary categories Top 10
     └── ...
@@ -54,10 +54,11 @@ Edit `config.yaml` in the repository root to customize monitored applications, t
 ```yaml
 # Data retention rules
 retention:
-  reviews_days: 180            # Review retention in days
-  reviews_max_count: 10000     # Max standard reviews per app
+  reviews_days: 365            # Review retention in days (1 year)
+  reviews_max_count: 1000000   # Max standard reviews per app (1M)
   keep_all_helpful: true       # Permanently preserve most helpful reviews
-  rankings_days: 180           # Rankings snapshot retention in days
+  chunk_size_mb: 45            # Auto-split into _partN.csv when exceeded
+  rankings_days: 365           # Rankings snapshot retention in days (1 year)
 
 # Monitored applications list
 monitored_apps:
