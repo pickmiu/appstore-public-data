@@ -36,6 +36,9 @@ monitored_apps:
   - id: "1671705818"
     name: "Character AI"
     countries: ["us"]
+  - id: "1503466530"
+    name: "迅雷"
+    countries: ["cn"]
 
   # --- China Leading LLMs ---
   - id: "6459478672"
@@ -43,6 +46,12 @@ monitored_apps:
     countries: ["cn"]
   - id: "6466733523"
     name: "通义千问"
+    countries: ["cn"]
+  - id: "6743828427"
+    name: "蚂蚁阿福"
+    countries: ["cn"]
+  - id: "6761374913"
+    name: "WorkBuddy"
     countries: ["cn"]
   - id: "6737597349"
     name: "DeepSeek"
