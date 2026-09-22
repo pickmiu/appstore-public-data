@@ -19,7 +19,7 @@ import time
 import urllib.request
 from datetime import datetime, timezone, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 
 REQUEST_TIMEOUT = 12
 USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -90,7 +90,8 @@ def fetch_main_chart(region: str, limit: int = 100, exclude_games: bool = True) 
     Fetch the Top Free main chart, supporting non-game filtering.
     Prioritizes modern Apple Media Services Feed API, falling back to iTunes RSS.
     """
-    url = f"https://rss.applemarketingtools.com/api/v2/{region}/apps/top-free/100/apps.json"
+    # Request up to 200 items so that after game filtering the chart can still be padded up to `limit`
+    url = f"https://rss.applemarketingtools.com/api/v2/{region}/apps/top-free/200/apps.json"
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
 
     try:
@@ -119,8 +120,8 @@ def fetch_main_chart(region: str, limit: int = 100, exclude_games: bool = True) 
     except Exception as e:
         print(f"[{region.upper()}] Apple Media Services main chart request failed, falling back to iTunes RSS: {e}", file=sys.stderr)
 
-    # Fallback to iTunes RSS
-    fallback_url = f"https://itunes.apple.com/{region}/rss/topfreeapplications/limit=100/json"
+    # Fallback to iTunes RSS (request up to 200 items for non-game padding)
+    fallback_url = f"https://itunes.apple.com/{region}/rss/topfreeapplications/limit=200/json"
     fallback_req = urllib.request.Request(fallback_url, headers={"User-Agent": USER_AGENT})
     try:
         with urllib.request.urlopen(fallback_req, timeout=REQUEST_TIMEOUT) as resp:
@@ -172,10 +173,10 @@ def fetch_genre_chart(region: str, genre_id: int, genre_name: str, limit: int = 
     """
     url = f"https://itunes.apple.com/{region}/rss/topfreeapplications/limit={limit}/genre={genre_id}/json"
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    apps = []
     max_retries = 2
 
     for attempt in range(max_retries + 1):
+        apps = []  # Reset per attempt so a failed partial attempt does not leak into retries
         try:
             with urllib.request.urlopen(req, timeout=REQUEST_TIMEOUT) as resp:
                 data = json.loads(resp.read().decode("utf-8"))

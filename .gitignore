@@ -9,3 +9,21 @@ htmlcov/
 venv/
 ENV/
 .commit_msg
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+.tox/
+
+# Environment variables & secrets
+.env
+.env.*
+
+# IDE & editors
+.idea/
+.vscode/
+*.swp
+*.swo

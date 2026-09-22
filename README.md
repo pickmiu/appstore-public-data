@@ -103,13 +103,16 @@ python3 main.py --mode all
 
 ## Automated Scheduling Mechanism
 
-To eliminate high latency and dropped execution risks common to native GitHub Actions Cron triggers, the system utilizes **Cloudflare Workers (Cron Triggers)** for external high-precision dispatch paired with **GitHub Actions (`workflow_dispatch`)**:
+> [!IMPORTANT]
+> **Why native GitHub Actions `schedule` (cron) is NOT used**: Native GitHub Actions Cron triggers run on a shared best-effort queue and do NOT guarantee reliable or on-time execution. During peak GitHub infrastructure loads, scheduled jobs often suffer delays ranging from 30 minutes to several hours, or may even be dropped entirely. To ensure mission-critical timing for daily snapshots and incremental review ingestion, native cron in workflow files is intentionally disabled.
+
+Instead, the system utilizes **Cloudflare Workers (Cron Triggers)** for external high-precision dispatch paired with **GitHub Actions (`workflow_dispatch`)**:
 
 1. **Review Monitoring** (`monitor_reviews.yml`):
-   - **Schedule**: Triggered every 30 minutes on schedule;
+   - **Trigger**: Dispatched every 30 minutes via Cloudflare Worker webhook call;
    - **Logic**: Ingests new reviews and deduplicates using SHA-256 fingerprints into CSV. If a single run reaches the 500-review ceiling (page 10 full) with high new volume, it automatically triggers GitHub Actions `::warning` annotations and `$GITHUB_STEP_SUMMARY` alert boxes to flag potential overflow.
 2. **Rankings Snapshot** (`snapshot_rankings.yml`):
-   - **Schedule**: Triggered daily at 00:15 CST (16:15 UTC);
+   - **Trigger**: Dispatched daily at 00:15 CST (16:15 UTC) via Cloudflare Worker;
    - **Logic**: Scrapes non-game main chart and primary category rankings for China and the US, outputs formatted Markdown, and purges snapshots older than 180 days.
    - **Idempotency Guarantee**: Snapshot files are keyed by date (`rankings/YYYY-MM-DD_{region}.md`). If triggered multiple times on the same date, the system overwrites the file in place with updated timestamps and rankings, **never generating duplicate files or dirty records**.
 

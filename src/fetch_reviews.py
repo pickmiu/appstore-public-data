@@ -15,8 +15,6 @@ import sys
 import json
 import time
 import urllib.request
-import urllib.parse
-from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 
 from src.pipeline import save_reviews_to_csv, prune_reviews_data
@@ -46,15 +44,32 @@ def fetch_web_featured_reviews(app_id: str, app_name: str, country: str = "us") 
                 html = resp.read().decode("utf-8")
                 scripts = re.findall(r"<script[^>]*>(.*?)</script>", html, re.DOTALL)
                 for s in scripts:
-                    if "allProductReviews" in s:
+                    if "allProductReviews" not in s:
+                        continue
+                    try:
                         data = json.loads(s)
-                        data_items = data.get("data", [{}])
-                        for d_block in data_items:
-                            items = d_block.get("data", {}).get("shelfMapping", {}).get("allProductReviews", {}).get("items", [])
-                            for item in items:
-                                rev = item.get("review", {})
-                                if not rev:
-                                    continue
+                    except (ValueError, TypeError):
+                        continue
+
+                    if not isinstance(data, dict):
+                        continue
+
+                    data_items = data.get("data")
+                    if not isinstance(data_items, list):
+                        data_items = [{}] if isinstance(data.get("data"), dict) else []
+
+                    for d_block in data_items:
+                        if not isinstance(d_block, dict):
+                            continue
+                        items = d_block.get("data", {}).get("shelfMapping", {}).get("allProductReviews", {}).get("items", [])
+                        if not isinstance(items, list):
+                            continue
+                        for item in items:
+                            if not isinstance(item, dict):
+                                continue
+                            rev = item.get("review", {})
+                            if not rev or not isinstance(rev, dict):
+                                continue
 
                                 review_id = str(rev.get("id") or rev.get("targetReviewId", ""))
                                 if not review_id or review_id in seen_review_ids:
@@ -116,7 +131,7 @@ def fetch_rss_page_reviews(
                     feed = data.get("feed", {})
                     entries = feed.get("entry", [])
                     if not entries:
-                        continue
+                        return []  # Definitive end-of-pagination, return immediately without retrying
                     if isinstance(entries, dict):
                         entries = [entries]
 

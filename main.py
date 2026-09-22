@@ -12,6 +12,7 @@ Usage Examples:
 import os
 import sys
 import argparse
+import traceback
 from typing import Dict, Any
 
 try:
@@ -33,9 +34,12 @@ def load_config(config_path: str = "config.yaml") -> Dict[str, Any]:
     try:
         with open(config_path, mode="r", encoding="utf-8") as f:
             config = yaml.safe_load(f)
-            return config or {}
-    except Exception as e:
-        print(f"[Error] Failed to parse configuration file {config_path}: {e}", file=sys.stderr)
+            if not isinstance(config, dict):
+                print(f"[Error] Configuration file {config_path} must contain a top-level mapping", file=sys.stderr)
+                sys.exit(1)
+            return config
+    except (OSError, UnicodeDecodeError, yaml.YAMLError) as e:
+        print(f"[Error] Failed to load configuration file {config_path}: {e}", file=sys.stderr)
         sys.exit(1)
 
 
@@ -64,11 +68,27 @@ def main():
     print(f"⚙️  Execution Mode: {args.mode.upper()} | Config: {args.config}")
     print("=" * 60)
 
+    failures = []
+
     if args.mode in ("reviews", "all"):
-        run_reviews_pipeline(config)
+        try:
+            run_reviews_pipeline(config)
+        except Exception as e:
+            print(f"[Error] Reviews pipeline failed: {e}", file=sys.stderr)
+            traceback.print_exc()
+            failures.append("reviews")
 
     if args.mode in ("rankings", "all"):
-        run_rankings_pipeline(config)
+        try:
+            run_rankings_pipeline(config)
+        except Exception as e:
+            print(f"[Error] Rankings pipeline failed: {e}", file=sys.stderr)
+            traceback.print_exc()
+            failures.append("rankings")
+
+    if failures:
+        print(f"\n[Error] Pipeline finished with failures in: {', '.join(failures)}", file=sys.stderr)
+        sys.exit(1)
 
     print("\n" + "=" * 60)
     print("🎉 All pipeline tasks completed. Data synchronized to local directory!")
