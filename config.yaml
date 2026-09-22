@@ -4,7 +4,7 @@
 
 # 1. Data Retention & Lifecycle Rules
 retention:
-  reviews_days: 365            # Default retention for reviews in days (1 year)
+  reviews_days: 180            # Default retention for reviews in days (half a year / 180 days)
   reviews_max_count: 1000000   # Maximum latest reviews per application (1M)
   keep_all_helpful: true       # Permanently retain all "Most Helpful" reviews (exempt from expiry)
   chunk_size_mb: 45            # Maximum chunk size in MB (splits into _partN.csv when exceeded)
@@ -83,8 +83,8 @@ monitored_apps:
   - id: "878577184"
     name: "SHEIN"
     countries: ["us", "gb", "de", "jp", "kr", "mx"]
-  - id: "371294472"
-    name: "Shopify"
+  - id: "1223471316"
+    name: "Shop"
     countries: ["us", "ca", "gb"]
   - id: "297606951"
     name: "Amazon"

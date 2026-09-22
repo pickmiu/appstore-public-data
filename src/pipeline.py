@@ -480,39 +480,34 @@ def prune_reviews_data(
     cutoff_date = now_utc - timedelta(days=retention_days)
     cutoff_iso = cutoff_date.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    helpful_pool = []
-    ordinary_pool = []
+    helpful_fps = set()
+    ordinary_valid = []
 
     for r in all_records:
         is_helpful = str(r.get("is_most_helpful", "")).strip().lower() in ("true", "1", "yes")
         if keep_all_helpful and is_helpful:
-            helpful_pool.append(r)
+            helpful_fps.add(r.get("fingerprint"))
         else:
             r_date = r.get("review_date", "")
             if r_date >= cutoff_iso:
-                ordinary_pool.append(r)
+                ordinary_valid.append(r)
 
     # Sort ordinary reviews descending by date and truncate to max_count
-    ordinary_pool.sort(key=lambda x: x.get("review_date", ""), reverse=True)
-    ordinary_retained = ordinary_pool[:max_count]
+    ordinary_sorted = sorted(ordinary_valid, key=lambda x: x.get("review_date", ""), reverse=True)
+    ordinary_retained_fps = {r.get("fingerprint") for r in ordinary_sorted[:max_count]}
 
-    # Merge protected pool and retained ordinary pool using fingerprint for uniqueness
+    # Set of all retained fingerprints (helpful pool + within-retention ordinary pool)
+    retained_fps = helpful_fps.union(ordinary_retained_fps)
+
+    # Reconstruct records preserving existing file order and uniqueness
     seen_fps = set()
     combined_records = []
-
-    for r in helpful_pool:
+    for r in all_records:
         fp = r.get("fingerprint")
-        if fp and fp not in seen_fps:
+        if fp and fp in retained_fps and fp not in seen_fps:
             seen_fps.add(fp)
             combined_records.append(r)
 
-    for r in ordinary_retained:
-        fp = r.get("fingerprint")
-        if fp and fp not in seen_fps:
-            seen_fps.add(fp)
-            combined_records.append(r)
-
-    combined_records.sort(key=lambda x: x.get("review_date", ""), reverse=True)
     total_after = len(combined_records)
     pruned_count = total_before - total_after
 
@@ -532,8 +527,8 @@ def prune_reviews_data(
             "total_before": total_before,
             "total_after": total_after,
             "pruned_count": pruned_count,
-            "helpful_retained": len(helpful_pool),
-            "ordinary_retained": len(ordinary_retained)
+            "helpful_retained": len(helpful_fps),
+            "ordinary_retained": len(ordinary_retained_fps)
         }
 
     # If single file and fits in chunk size, write directly to base file
@@ -559,8 +554,8 @@ def prune_reviews_data(
             "total_before": total_before,
             "total_after": total_after,
             "pruned_count": pruned_count,
-            "helpful_retained": len(helpful_pool),
-            "ordinary_retained": len(ordinary_retained)
+            "helpful_retained": len(helpful_fps),
+            "ordinary_retained": len(ordinary_retained_fps)
         }
 
     # Multi-chunk write back
@@ -598,6 +593,6 @@ def prune_reviews_data(
         "total_before": total_before,
         "total_after": total_after,
         "pruned_count": pruned_count,
-        "helpful_retained": len(helpful_pool),
-        "ordinary_retained": len(ordinary_retained)
+        "helpful_retained": len(helpful_fps),
+        "ordinary_retained": len(ordinary_retained_fps)
     }

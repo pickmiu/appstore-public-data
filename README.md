@@ -11,7 +11,7 @@ An automated App Store public data monitoring and archival system powered by fre
 - **Incremental Review Monitoring**: Periodically polls monitored apps for new reviews. Employs `SHA-256` content fingerprinting for instant deduplication, ensuring zero missed reviews.
 - **Data Cleaning & Quality Flagging**: Automatically sanitizes invisible control characters and excess blank lines, normalizes timestamps to ISO-8601 UTC, and flags ultra-short or promotional spam content.
 - **Lifecycle & Retention Management**:
-  - Reviews are retained for **365 days (1 year)** by default;
+  - Reviews are retained for **180 days (half a year)** by default;
   - Standard reviews are capped at **1,000,000 latest entries** per application with automatic 45MB chunking;
   - **All "Most Helpful" in-depth reviews are permanently preserved** and exempt from expiration cleanup.
 - **Daily Midnight Non-Game Rankings Snapshot**: Automatically scrapes Top 100 free apps (games strictly filtered) and Top 10 apps across primary non-game categories for China and United States every day at 00:00 CST / 16:00 UTC, outputting clean Markdown snapshots retained for 365 days (1 year).
@@ -56,7 +56,7 @@ Edit `config.yaml` in the repository root to customize monitored applications, t
 ```yaml
 # Data retention rules
 retention:
-  reviews_days: 365            # Review retention in days (1 year)
+  reviews_days: 180            # Review retention in days (half a year / 180 days)
   reviews_max_count: 1000000   # Max standard reviews per app (1M)
   keep_all_helpful: true       # Permanently preserve most helpful reviews
   chunk_size_mb: 45            # Auto-split into _partN.csv when exceeded

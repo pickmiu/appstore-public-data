@@ -7,6 +7,7 @@ test_pipeline.py - Unit tests for data cleaning, deduplication, and lifecycle ma
 import os
 import shutil
 import tempfile
+import csv
 import unittest
 from datetime import datetime, timezone, timedelta
 
@@ -123,6 +124,9 @@ class TestPipeline(unittest.TestCase):
         self.assertEqual(res["total_after"], 2)  # Pruned 1 expired ordinary review
         self.assertEqual(res["pruned_count"], 1)
         self.assertEqual(res["helpful_retained"], 1)
+        with open(self.test_csv, mode="r", encoding="utf-8-sig") as f:
+            surviving_ids = [r["review_id"] for r in csv.DictReader(f)]
+        self.assertEqual(surviving_ids, ["101", "103"])
 
     def test_retention_pre_filtering_in_save(self):
         now = datetime.now(timezone.utc)
