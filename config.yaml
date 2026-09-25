@@ -52,9 +52,6 @@ monitored_apps:
   - id: "6743828427"
     name: "蚂蚁阿福"
     countries: ["cn"]
-  - id: "6761374913"
-    name: "WorkBuddy"
-    countries: ["cn"]
   - id: "6737597349"
     name: "DeepSeek"
     countries: ["cn", "us"]
