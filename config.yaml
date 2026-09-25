@@ -40,9 +40,7 @@ monitored_apps:
   - id: "1671705818"
     name: "Character AI"
     countries: ["us"]
-  - id: "1503466530"
-    name: "迅雷"
-    countries: ["cn"]
+
 
   # --- China Leading LLMs ---
   - id: "6459478672"
