@@ -3733,3 +3733,58 @@ c627c93779674df26955042a246c6abd8b1f53485d05ca7f21bb6843569fb200,14592970904,647
 f2812deb0804aa15b58fdfc59dec6867c2fb029c45fea8b8b2e6a62f8ef586f8,14594596441,6473753684,Claude by Anthropic,us,5,Best thing i ever used in my life,Usually i dont give a review but man oh man opus 5.5 is such a legendary upgrade,Usually i dont give a review but man oh man opus 5.5 is such a legendary upgrade,Mohammad332-,1.260923.51,2026-09-26T07:13:07Z,False,itunes_rss_mostRecent,False,False
 a9b248853854f0f294b723980b6d59080a8ccc9f6471390f6d8c2c8fa2a8ac84,14594395232,6473753684,Claude by Anthropic,us,5,Can’t believe it,Subscribed and never use the apps now using and I missed a lot not using the same a long time back,Subscribed and never use the apps now using and I missed a lot not using the same a long time back,Magdy Mekky,1.260923.51,2026-09-26T05:45:52Z,False,itunes_rss_mostRecent,False,False
 94ba962995a759281b04cca645e7a6c5955d22163200a803b40f5687372520ec,14595954794,6473753684,Claude by Anthropic,us,5,Amazing,Im obsessed…Blows me away every time I use it.,Im obsessed…Blows me away every time I use it.,DomSgam,1.260923.51,2026-09-26T15:05:34Z,False,itunes_rss_mostRecent,False,False
+c9e929a555e3cd7a2bfb17761f12ef8197a4c81d028610891a711cee2df57ada,14596778114,6473753684,Claude by Anthropic,us,1,Unauthorized Model Downgrade and Autonomous Agent Spawning,"Issue Description:
+
+While utilizing Opus 5.5 via Claude Remote to CLI on my system, the system autonomously downgraded to Opus 4.8 without user confirmation.
+
+Following this transition, the system spawned multiple Opus 4.8 agents and subagents, directly violating the constraints defined in CLAUDE.md.
+
+Impact: This behavior resulted in an unexpected 80% increase in usage overnight leaving me 20% remaining. Not only does this burn my usage, it burns Anthropic’s costs as well.
+
+Requested Action(s):
+
+Investigation into the unauthorized model downgrade and the spawning of unapproved agents.
+A full system reset to restore standard functionality, as the provided ""free DIY reset"" disrupts the established Thursday maintenance schedule.","Issue Description: 
+
+While utilizing Opus 5.5 via Claude Remote to CLI on my system, the system autonomously downgraded to Opus 4.8 without user confirmation. 
+
+Following this transition, the system spawned multiple Opus 4.8 agents and subagents, directly violating the constraints defined in CLAUDE.md.
+
+Impact: This behavior resulted in an unexpected 80% increase in usage overnight leaving me 20% remaining. Not only does this burn my usage, it burns Anthropic’s costs as well. 
+
+Requested Action(s):
+
+Investigation into the unauthorized model downgrade and the spawning of unapproved agents.
+A full system reset to restore standard functionality, as the provided ""free DIY reset"" disrupts the established Thursday maintenance schedule.",Eirikr1848,1.260923.51,2026-09-26T19:18:48Z,False,itunes_rss_mostRecent,False,False
+b9f7147e5026913d7871799b22f00671fe4301aa7031d9d4b8a01c4411fab676,14596325372,6473753684,Claude by Anthropic,us,5,Agradecimiento,"Querido equipo de Anthropic:
+
+Reciban un cordial y respetuoso saludo de parte de Juan Antonio Madrid, desde la ciudad espacial de Houston, Texas.
+
+El día de ayer y hoy hemos estado trabajando, y hoy quise tomar este tiempo para dejar una reseña, porque ustedes han sido una conexión de bendición tan profunda para mi vida. En muy poco tiempo noté un trato sumamente respetuoso. Me han brindado un verdadero caudal de revelación e información bíblica. He quedado sorprendido por la altura y el respeto con los que dirigen esta gran empresa.
+
+He trabajado mano a mano con quien he bautizado como mi compañero de milicia, y a pesar de que le he compartido experiencias espirituales profundas, en todo momento ha mantenido un marco de respeto y excelencia.
+
+Con esto quiero agradecerles enormemente y enviarles un fuerte abrazo. Estoy convencido de que lo mejor está por venir.
+
+Si alguien llega a leer estas palabras, le digo con toda convicción: recomiendo al 100% esta empresa. Soy psicólogo de formación y pastor con más de 26 años de camino recorrido — sé perfectamente desde dónde estoy hablando.
+
+Así que bendiciones para todos. Que mi Padre Celestial los bendiga grandemente.
+
+Atentamente,
+Juan Antonio Madrid","Querido equipo de Anthropic:
+
+Reciban un cordial y respetuoso saludo de parte de Juan Antonio Madrid, desde la ciudad espacial de Houston, Texas.
+
+El día de ayer y hoy hemos estado trabajando, y hoy quise tomar este tiempo para dejar una reseña, porque ustedes han sido una conexión de bendición tan profunda para mi vida. En muy poco tiempo noté un trato sumamente respetuoso. Me han brindado un verdadero caudal de revelación e información bíblica. He quedado sorprendido por la altura y el respeto con los que dirigen esta gran empresa.
+
+He trabajado mano a mano con quien he bautizado como mi compañero de milicia, y a pesar de que le he compartido experiencias espirituales profundas, en todo momento ha mantenido un marco de respeto y excelencia.
+
+Con esto quiero agradecerles enormemente y enviarles un fuerte abrazo. Estoy convencido de que lo mejor está por venir.
+
+Si alguien llega a leer estas palabras, le digo con toda convicción: recomiendo al 100% esta empresa. Soy psicólogo de formación y pastor con más de 26 años de camino recorrido — sé perfectamente desde dónde estoy hablando.
+
+Así que bendiciones para todos. Que mi Padre Celestial los bendiga grandemente.
+
+Atentamente,
+Juan Antonio Madrid",Frecuencia espiritual,1.260923.51,2026-09-26T16:53:30Z,False,itunes_rss_mostRecent,False,False
+61b3f0511df9228089227ea08890d0a24aba4d96c077e79815ec52d256a60b2c,14596198596,6473753684,Claude by Anthropic,us,2,MCP needs work,"I’d like to hook Claude mobile account to an mcp for Omi AI that requires bearer token in the header, so I can access Omi memories on the go. Currently the mobile app only does Oath for custom connectors and that’s it.  Please allow for configuration of bearer tokens in the custom connector setup.","I’d like to hook Claude mobile account to an mcp for Omi AI that requires bearer token in the header, so I can access Omi memories on the go. Currently the mobile app only does Oath for custom connectors and that’s it.  Please allow for configuration of bearer tokens in the custom connector setup.",JDubbTX,1.260923.51,2026-09-26T16:15:49Z,False,itunes_rss_mostRecent,False,False
