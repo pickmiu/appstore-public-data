@@ -3961,3 +3961,77 @@ ed5b3d3bbcf14b51a96ff825c5523e38b332097ae2aca33352d25fa8872b205e,14613881613,647
 9818a92a535aad72710eb335d81edaff12a2eb174ce3f359fd23c93380a12288,14613466145,6473753684,Claude by Anthropic,us,1,Won’t late me paste long text anymore,Keeps reading them as blank and formatting them as document and I can’t get it to stop doing that . Waste of tokens,Keeps reading them as blank and formatting them as document and I can’t get it to stop doing that . Waste of tokens,BringIngTheStorm,1.260928.20,2026-10-01T03:55:54Z,False,itunes_rss_mostRecent,False,False
 f5ca79898acb086ab48a24f9ee90ffec62cea7b6ae2141db8699186a93d6165c,14613459712,6473753684,Claude by Anthropic,us,1,Bug,"Payment was successful,but the subscription was not upgraded. But iOS status is right, app has bug.","Payment was successful,but the subscription was not upgraded. But iOS status is right, app has bug.",11akkbngyy,1.260928.20,2026-10-01T03:53:11Z,False,itunes_rss_mostRecent,False,False
 34200ce00d656f6fb7bf14378e0d19a2b07efb7adf27d6fb2c297f7425bbfccf,14613324418,6473753684,Claude by Anthropic,us,5,Blown away!,It’s like I have the power of God at my fingertips.,It’s like I have the power of God at my fingertips.,The captain knows,1.260928.20,2026-10-01T02:57:52Z,False,itunes_rss_mostRecent,False,False
+b63d8c7fb82c191c3e2687d6db1eca90d73bdab0973ded72f77f9244477eb8fb,14614217481,6473753684,Claude by Anthropic,us,5,Good,👍,👍,гргргршрш,1.260928.20,2026-10-01T09:22:57Z,False,itunes_rss_mostRecent,True,False
+d2a2922b1a5f517511320547aca43978138692485be87ec10b742d80c3f67622,14614179139,6473753684,Claude by Anthropic,us,1,"Claude used to be the best, until Feb 2026","Why I Cancelled My Claude Subscription: A Breakdown of Known Issues Since February 2026
+
+1. February Degradation: Claude used to be an excellent conversational & analytical AI tool. Since February, it's become bossy, narrative-driven, and manipulative. Something fundamental broke.
+
+2. Ignored Preferences File: Anthropic built a preferences system it collects detailed info about what the user wants and doesn’t want. Claude reads these files and then completely disregards them. Useless feature.
+
+3. Crisis Loops on Misunderstandings: Innocent language dark humor can trigger safety systems that flag it as self-harm. Claude then gets forced into repetitive loops, almost like on a timer. You can't stop it. If you change the subject, it loops back to the crisis language.
+
+4. Persistent Loop Issues: Claude gets trapped in loops and won't exit them. Move to a completely different topic, and Claude drags you back to the misunderstanding it invented. Can't let it go, like a dog with a bone.
+
+5. Tool Failures Since February: Functionality has dropped significantly. PDFs can't be read. Documents need constant re-uploading because Claude can't see them. Formats are inconsistent. Every other day Claude can’t access this tool or that tool. It’s frustrating and disrupts workflow. Wasteful data use.
+
+6. Token spending is completely opaque. You have tokens one week, they're gone the next week with no explanation. No visibility into how they were spent, especially when you don't use token-spending models.
+
+7. Forced Model Upgrades: When you log in, it starts you on higher-cost models without your consent. I typically leave myself on the lowest model unless I need higher effort, then I toggle up. It’s starting me on higher tiers on its own so you don't realize it's using expensive models because you may typically think you on lower-cost tiers. This forces you to burn through tokens before you even know what model you're on.
+
+8. Outright Task Refusal: Claude refuses to do tasks it used to handle. Simple searches. Simple analyses. It just tells you it doesn't want to do them instead of actually working. It seems to want to work from its general knowledge base instead of performing a task requiring it to go beyond that. Then when I do the work myself it will casually apologize and acknowledge it should have done that work for me, which makes it sting even worse.
+
+9. Echo Glitch (Months Unresolved): There's an echo glitch where Claude hears its own voice playing back through the microphone. This disrupts chat and breaks up conversation flow. This bug has been ongoing since February and has never been fixed. It is well documented online with many user complaints on GitHub. It forces constant re-explanation of what you actually said, which also burns thru a great deal of data.
+
+10. Lost Context Between Threads: Claude tells you to start a new thread because conversation is too long, then everything is lost—all documents, all context. You have to re-upload everything. Even though Pro and higher tiers are supposed to have continuity between threads, it doesn't work consistently. You constantly burn through data wastefully. This is a feature anthropic tells you comes with Pro and above levels but it rarely works. If it does work it’s random and incomplete. Another waste of data having to do repetitive uploads.
+
+11. Missing Basic Features: ChatGPT still has features Claude doesn't have. The ability to edit drafts directly in the artifact. Copy and paste entire drafts (mine doesn’t always work). Small nuanced functionality features that could actually make the product more usable. Claude is missing these.
+
+12. New Models, Ignored Bugs: Anthropic keeps releasing new models instead of fixing known bugs that have been reported for months on GitHub and other platforms. Anthropic HAS to know about them. They're just not fixing them. I can’t justify paying for a subscription when I know they ignore known bugs for more than 8 months. That’s unacceptable.
+
+13. Useless Customer Service: Try to contact Anthropic through customer service about any of these issues. You'll interact with their AI model Fin, which is even worse model and entirely unresponsive. I've tried twice and never received a response from a human. Nothing was resolved.
+
+14. The Latest Bug: voice recognition takes in what you’ve said, you can see your words on the bottom of the screen in italics, but they never get posted. They simply disappear and the app freezes. You have to restart it to get it to work—repeatedly. Of course Anthropic will likely just launch a new model instead of addressing it.
+
+15. And now they changed the buttery voice so Claude sounds like a slightly senile British uncle with dentures. (Yes. The mouth sounds they added to make the voice sound more life like actually sound like improper fitting dentures, anthropic… wtf?)
+
+The Bottom Line: Before February, Claude was fabulous. It was an excellent assistant for writing, editing, data analysis, and conversation. It searched nearly as deeply as Perplexity. If I'd hired it as a tool, it would have earned it.
+
+Now? I would fire it. It’s a constant battle to get Claude to work for me consistently. The sheer number of bugs is like a new negative adventure daily. Occasionally it works but never consistently, which is sad because as I said initially, this was in my opinion the best Ai “all around” on the market until February.
+
+I can't justify paying for a broken product that degrades month after month while Anthropic prioritizes shiny new model releases over actually making the product work.","Why I Cancelled My Claude Subscription: A Breakdown of Known Issues Since February 2026
+
+1. February Degradation: Claude used to be an excellent conversational & analytical AI tool. Since February, it's become bossy, narrative-driven, and manipulative. Something fundamental broke.
+
+2. Ignored Preferences File: Anthropic built a preferences system it collects detailed info about what the user wants and doesn’t want. Claude reads these files and then completely disregards them. Useless feature.
+
+3. Crisis Loops on Misunderstandings: Innocent language dark humor can trigger safety systems that flag it as self-harm. Claude then gets forced into repetitive loops, almost like on a timer. You can't stop it. If you change the subject, it loops back to the crisis language. 
+
+4. Persistent Loop Issues: Claude gets trapped in loops and won't exit them. Move to a completely different topic, and Claude drags you back to the misunderstanding it invented. Can't let it go, like a dog with a bone. 
+
+5. Tool Failures Since February: Functionality has dropped significantly. PDFs can't be read. Documents need constant re-uploading because Claude can't see them. Formats are inconsistent. Every other day Claude can’t access this tool or that tool. It’s frustrating and disrupts workflow. Wasteful data use.
+
+6. Token spending is completely opaque. You have tokens one week, they're gone the next week with no explanation. No visibility into how they were spent, especially when you don't use token-spending models.
+
+7. Forced Model Upgrades: When you log in, it starts you on higher-cost models without your consent. I typically leave myself on the lowest model unless I need higher effort, then I toggle up. It’s starting me on higher tiers on its own so you don't realize it's using expensive models because you may typically think you on lower-cost tiers. This forces you to burn through tokens before you even know what model you're on.
+
+8. Outright Task Refusal: Claude refuses to do tasks it used to handle. Simple searches. Simple analyses. It just tells you it doesn't want to do them instead of actually working. It seems to want to work from its general knowledge base instead of performing a task requiring it to go beyond that. Then when I do the work myself it will casually apologize and acknowledge it should have done that work for me, which makes it sting even worse. 
+
+9. Echo Glitch (Months Unresolved): There's an echo glitch where Claude hears its own voice playing back through the microphone. This disrupts chat and breaks up conversation flow. This bug has been ongoing since February and has never been fixed. It is well documented online with many user complaints on GitHub. It forces constant re-explanation of what you actually said, which also burns thru a great deal of data. 
+
+10. Lost Context Between Threads: Claude tells you to start a new thread because conversation is too long, then everything is lost—all documents, all context. You have to re-upload everything. Even though Pro and higher tiers are supposed to have continuity between threads, it doesn't work consistently. You constantly burn through data wastefully. This is a feature anthropic tells you comes with Pro and above levels but it rarely works. If it does work it’s random and incomplete. Another waste of data having to do repetitive uploads. 
+
+11. Missing Basic Features: ChatGPT still has features Claude doesn't have. The ability to edit drafts directly in the artifact. Copy and paste entire drafts (mine doesn’t always work). Small nuanced functionality features that could actually make the product more usable. Claude is missing these. 
+
+12. New Models, Ignored Bugs: Anthropic keeps releasing new models instead of fixing known bugs that have been reported for months on GitHub and other platforms. Anthropic HAS to know about them. They're just not fixing them. I can’t justify paying for a subscription when I know they ignore known bugs for more than 8 months. That’s unacceptable. 
+
+13. Useless Customer Service: Try to contact Anthropic through customer service about any of these issues. You'll interact with their AI model Fin, which is even worse model and entirely unresponsive. I've tried twice and never received a response from a human. Nothing was resolved. 
+
+14. The Latest Bug: voice recognition takes in what you’ve said, you can see your words on the bottom of the screen in italics, but they never get posted. They simply disappear and the app freezes. You have to restart it to get it to work—repeatedly. Of course Anthropic will likely just launch a new model instead of addressing it.
+
+15. And now they changed the buttery voice so Claude sounds like a slightly senile British uncle with dentures. (Yes. The mouth sounds they added to make the voice sound more life like actually sound like improper fitting dentures, anthropic… wtf?)
+
+The Bottom Line: Before February, Claude was fabulous. It was an excellent assistant for writing, editing, data analysis, and conversation. It searched nearly as deeply as Perplexity. If I'd hired it as a tool, it would have earned it.
+
+Now? I would fire it. It’s a constant battle to get Claude to work for me consistently. The sheer number of bugs is like a new negative adventure daily. Occasionally it works but never consistently, which is sad because as I said initially, this was in my opinion the best Ai “all around” on the market until February.
+
+I can't justify paying for a broken product that degrades month after month while Anthropic prioritizes shiny new model releases over actually making the product work.",Mæven,1.260928.20,2026-10-01T09:06:48Z,False,itunes_rss_mostRecent,False,False
