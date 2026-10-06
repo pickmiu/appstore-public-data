@@ -93,6 +93,12 @@ monitored_apps:
   - id: "374254473"
     name: "Amazon"
     countries: ["jp"]
+  - id: "6472232952"
+    name: "Koupon"
+    countries: ["us"]
+  - id: "6745274862"
+    name: "DealSeek"
+    countries: ["us", "ca"]
 
   # --- Global Social, Messaging & Communication ---
   - id: "414478124"
