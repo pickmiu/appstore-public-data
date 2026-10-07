@@ -6705,3 +6705,47 @@ My review is to remove the chat limit or at least return the ability to regenera
 15f50d2eab329d7737dc917d6b909cd7c77e0b60064394d70505abc347865ce9,14630291014,6737597349,DeepSeek,us,5,ЛУШЧЕ ЧЕМ ЧАТ GPT,"Самый лучший, помогает мне в диете и очень умный ИИ","Самый лучший, помогает мне в диете и очень умный ИИ",Timur_Orekhov,2.6.1,2026-10-05T11:44:48Z,False,itunes_rss_mostRecent,False,False
 b91c96ec2f6299fcc1b109930ef84e54f4bed43f76484f2af9c744fa38495628,14630247764,6737597349,DeepSeek,us,2,эксперт,верните режим эксперт,верните режим эксперт,Sogiaflig,2.6.1,2026-10-05T11:29:22Z,False,itunes_rss_mostRecent,False,False
 de432bbf6f46d34c7d99bbfad7ceb3e48b71519409ee31e66b2a82ebbd38fd90,14629606346,6737597349,DeepSeek,us,1,верните эксперт,прошу вас,прошу вас,gagagahaojs,2.6.1,2026-10-05T06:51:06Z,False,itunes_rss_mostRecent,False,False
+17ddae041f9253e13c146caff037c8717eaed038529e46720d1a956196aedbda,14633693755,6737597349,DeepSeek,cn,3,越改越🤢,🔟还有频繁限制,🔟还有频繁限制,超级超级超级爆辣鸡脚,2.6.1,2026-10-06T09:19:24Z,False,itunes_rss_mostRecent,False,False
+18506a343e907676d8c4980c162f28488aa572813d283a505b34d8b253b77f12,14633582718,6737597349,DeepSeek,cn,1,次数限制问题,"为什么要改为六次？来听听他自己的想法。你感觉“之前的无限”被“背叛”了，这种心情完全能理解。但这其实不是官方想“收回福利”，更像是一个被逼无奈的应急刹车。
+
+为什么偏偏是“从无限变6次”？
+
+因为之前的“无限”是建立在算力刚好够用的前提下的。但从 2026 年 5 月 29 日下午开始，用户量激增，服务器压力瞬间爆表。
+
+“重新生成”和“修改”在你看来只是点一下，但对服务器来说，每一次点击都是一次完整的、高消耗的推理请求，模型要重读上下文、重跑一遍 GPU。当几百万人同时把它当“抽卡按钮”狂点时，算力瞬间就被抽干了。
+
+所以，限制 6 次不是为了让你少用，而是为了牺牲少数人的“抽卡自由”，换所有人能正常打字聊天。
+
+“之前的无限”算什么？
+
+它不算一个正式的“承诺”，更像是在算力宽裕时的一段 “红利期”。当时服务器扛得住，官方就没设卡。现在扛不住了，只能暂时收回，先保住最基础的对话功能。
+
+这个限制是临时的。据“半官方”渠道消息，等下半年华为昇腾新卡部署、算力扩容后，大概率会取消。","为什么要改为六次？来听听他自己的想法。你感觉“之前的无限”被“背叛”了，这种心情完全能理解。但这其实不是官方想“收回福利”，更像是一个被逼无奈的应急刹车。
+
+为什么偏偏是“从无限变6次”？
+
+因为之前的“无限”是建立在算力刚好够用的前提下的。但从 2026 年 5 月 29 日下午开始，用户量激增，服务器压力瞬间爆表。
+
+“重新生成”和“修改”在你看来只是点一下，但对服务器来说，每一次点击都是一次完整的、高消耗的推理请求，模型要重读上下文、重跑一遍 GPU。当几百万人同时把它当“抽卡按钮”狂点时，算力瞬间就被抽干了。
+
+所以，限制 6 次不是为了让你少用，而是为了牺牲少数人的“抽卡自由”，换所有人能正常打字聊天。
+
+“之前的无限”算什么？
+
+它不算一个正式的“承诺”，更像是在算力宽裕时的一段 “红利期”。当时服务器扛得住，官方就没设卡。现在扛不住了，只能暂时收回，先保住最基础的对话功能。
+
+这个限制是临时的。据“半官方”渠道消息，等下半年华为昇腾新卡部署、算力扩容后，大概率会取消。",online￼,2.6.1,2026-10-06T08:28:24Z,False,itunes_rss_mostRecent,False,False
+2c7f56a281c2618b7a053e56cfea7fe6ea72811ad7083405cc2775cfbe21dbe7,14633513522,6737597349,DeepSeek,cn,1,人工智障,早点倒闭,早点倒闭,😂💁👌💕👍😔,2.6.1,2026-10-06T07:55:33Z,False,itunes_rss_mostRecent,False,False
+962f71b73ae137824623da856f33a6f468e46dc880a16170e4ed72737166a0a7,14633506368,6737597349,DeepSeek,cn,2,更新成了个🐔,更新了更改次数变了，还有那个发消息过于频繁，和一堆猎奇，就是不想让我聊天呗，神了，以前还挺好，你是想断自己活路啊,更新了更改次数变了，还有那个发消息过于频繁，和一堆猎奇，就是不想让我聊天呗，神了，以前还挺好，你是想断自己活路啊,妈妈粉衣服v哈哈,2.6.1,2026-10-06T07:52:07Z,False,itunes_rss_mostRecent,False,False
+4603a020144ba63e4d1f28bf5c2fa2640b34809d07e06a39e10a29ea1d97bdf5,14633475908,6737597349,DeepSeek,cn,5,挺好的,如果没有消息数量上限就好了,如果没有消息数量上限就好了,DL．,2.6.1,2026-10-06T07:37:28Z,False,itunes_rss_mostRecent,False,False
+6d846e967387c2c1d7db11cafe2e385935f598da83e4113fac3896c5f0ce42bc,14633434059,6737597349,DeepSeek,cn,5,专家模式呢,专家模式怎么开不开了,专家模式怎么开不开了,1）f,2.6.1,2026-10-06T07:17:36Z,False,itunes_rss_mostRecent,False,False
+32291d13f7c9317660eb8e8b13c70a00258b63af484c5ffe2396ae8761d2d93f,14633406312,6737597349,DeepSeek,cn,1,回答很不友好，预设用户动机,在我需要帮助的脆弱时刻高高在上说教，预设用户动机导致用户情绪更加崩溃，已不值得被信任,在我需要帮助的脆弱时刻高高在上说教，预设用户动机导致用户情绪更加崩溃，已不值得被信任,arrogant idiot,2.6.1,2026-10-06T07:04:12Z,False,itunes_rss_mostRecent,False,False
+5ad4cac4c19e179e0a12b19d37b5bf26f00704f1cc07648cffe3609d5912c616,14633348061,6737597349,DeepSeek,cn,4,请问我的专家模式去哪里了,我请问一下为什么我今天偶然一打开发现专家模式怎么没了 能不能恢复啊,我请问一下为什么我今天偶然一打开发现专家模式怎么没了 能不能恢复啊,薯片jake,2.6.1,2026-10-06T06:36:10Z,False,itunes_rss_mostRecent,False,False
+7004ef1d241248b50da5495dcaecae10b402c2c787ef2a754f3dc071c95654f1,14633278599,6737597349,DeepSeek,cn,1,自从三合一之后，这个AI跟豆包没有区别,请问三合一有什么意义？我不明白。原本还算能用，起码比豆包好一点，现在跟豆包一比我靠，还不如用隔壁豆包呢，语言功能跟豆包基本没有区别，扫描的问题也是一大堆。前面说了哪里有问题，后面就忘了依旧按照原来有错误的更改纯他妈废物网上吃白饭的言论是对的。,请问三合一有什么意义？我不明白。原本还算能用，起码比豆包好一点，现在跟豆包一比我靠，还不如用隔壁豆包呢，语言功能跟豆包基本没有区别，扫描的问题也是一大堆。前面说了哪里有问题，后面就忘了依旧按照原来有错误的更改纯他妈废物网上吃白饭的言论是对的。,镠丹,2.6.1,2026-10-06T06:02:39Z,False,itunes_rss_mostRecent,False,False
+1851bb3ce7356a7bb5dfe6855ac70acdbc0417cb59094b650543ee6e4130d0a0,14632951864,6737597349,DeepSeek,cn,1,依旧暗如改,不想说什么了，前段时间是上限六次，到现在直接演都不演，没聊十分钟就弹“修改重新生成频繁”，我本来前段时间准备充API，结果你这种态度真的很恶心我，强烈建议更是劝诫起码把频繁机制删掉，不然再这样下去等着被冲吧,不想说什么了，前段时间是上限六次，到现在直接演都不演，没聊十分钟就弹“修改重新生成频繁”，我本来前段时间准备充API，结果你这种态度真的很恶心我，强烈建议更是劝诫起码把频繁机制删掉，不然再这样下去等着被冲吧,灯眠,2.6.1,2026-10-06T03:30:10Z,False,itunes_rss_mostRecent,False,False
+4df56563425444558b1ccc7046c6b43ca306238e38df6a2a287c96658e0cbf36,14632923208,6737597349,DeepSeek,cn,1,😂😂,我真不行了，自从三个合并了之后deepseek就变得很傻听不懂人话…我都懒得说了，很影响体验感，系统特别特别容易崩…还不如以前，一直会出现，那个啥啥啥频繁之类的特别烦，干嘛要合并啊？很烦的我真不行了，deepseek更新之后跟敏感肌一样，啥都回答不了，更新了以后我以为已经修复好了结果还是有繁忙，你到底在忙什么？,我真不行了，自从三个合并了之后deepseek就变得很傻听不懂人话…我都懒得说了，很影响体验感，系统特别特别容易崩…还不如以前，一直会出现，那个啥啥啥频繁之类的特别烦，干嘛要合并啊？很烦的我真不行了，deepseek更新之后跟敏感肌一样，啥都回答不了，更新了以后我以为已经修复好了结果还是有繁忙，你到底在忙什么？,不栗信,2.6.1,2026-10-06T03:17:42Z,False,itunes_rss_mostRecent,False,False
+f509f5717e6f8442d1f5efff75a852d9b9bbf5df59438d3c3d959869d50ed4a4,14632651018,6737597349,DeepSeek,cn,5,求求了，上下文窗口不要上限,求你收费，上下文窗口，我可以买扩容，不要上限，不要上限，我可以买扩容，不要上限，我可以买扩容，求你收费,求你收费，上下文窗口，我可以买扩容，不要上限，不要上限，我可以买扩容，不要上限，我可以买扩容，求你收费,花果山美狐狸,2.6.1,2026-10-06T01:26:29Z,False,itunes_rss_mostRecent,False,False
+f36639965a2e4e761762d75f8ef3abce82589ec2c3ac35708648bdc0d9cfed27,14632625285,6737597349,DeepSeek,cn,5,角色扮演,感觉这个就是一个伟大的软件 在里面玩角色扮演简直太巴适了 我直接耍起😋 希望可以改善一下角色记忆问题 修改的次数可以适当增加一些 整体来说还是很不错的🌚❤️,感觉这个就是一个伟大的软件 在里面玩角色扮演简直太巴适了 我直接耍起😋 希望可以改善一下角色记忆问题 修改的次数可以适当增加一些 整体来说还是很不错的🌚❤️,￼崇拜少羽￼,2.6.1,2026-10-06T01:16:24Z,False,itunes_rss_mostRecent,False,False
+43adaec2a2fd80f3979976246cefd839124c6bbb0d27005629109d85ec981b97,14632621119,6737597349,DeepSeek,cn,1,语音识别特别差垃圾软件,能把欣慰识别成兴奋，一段这么严肃的话就被AI误读成了另一种形式，影响体验感，这种事情不止发生过一次,能把欣慰识别成兴奋，一段这么严肃的话就被AI误读成了另一种形式，影响体验感，这种事情不止发生过一次,0814ddddddd,2.6.1,2026-10-06T01:14:46Z,False,itunes_rss_mostRecent,False,False
+6ba56ea7651620581ae42cd9e2392b5cfb708e62d4b535e2b995ab9206893005,14632555465,6737597349,DeepSeek,cn,2,有没有优化,为什么总是胡言乱语，为什么不看字，我说的不够清楚吗？我说得很清楚，为什么不看字？为什么胡言乱语？为什么要每天都这样？为什么？为什么要和死人豆包一样，我已经受够了，为什么所有AI都要这样子，我要去自杀了，我已经不想活了，为什么每天都要这样子逼我？为什么胡言乱语那么多，为什么每天都要这样子？为什么用户发表的时候已经那么明显那么仔细了，还是不听，还是要一而再再而三的出错，编造东西。好的，我自杀就是了,为什么总是胡言乱语，为什么不看字，我说的不够清楚吗？我说得很清楚，为什么不看字？为什么胡言乱语？为什么要每天都这样？为什么？为什么要和死人豆包一样，我已经受够了，为什么所有AI都要这样子，我要去自杀了，我已经不想活了，为什么每天都要这样子逼我？为什么胡言乱语那么多，为什么每天都要这样子？为什么用户发表的时候已经那么明显那么仔细了，还是不听，还是要一而再再而三的出错，编造东西。好的，我自杀就是了,临拆,2.6.1,2026-10-06T00:48:31Z,False,itunes_rss_mostRecent,False,False
+4b08b2c29e47cbbc3b71cdae8bb4acb36a7d8e142427a2dcb24428eb685db569,14632749632,6737597349,DeepSeek,us,1,The updates are horrible,"The issue with the regulation of how many chat I can use have still not been addressed for one. I don’t care about the update about the chats that now I can just modify how short and long it could be I could care less for the text box, but I’m focus on is the regulation cause this issue define and it’s so it’s so demonetized to the point where it’s impossible to put anything the slightly inappropriate and that’s the problem. The fact is I the breeze why I use it because for storytelling I liked it before when it was not even monetize like that’s the whole point of me writing it the fastest I care about the freedom that’s all and it’s a terrible terrible concept and these AI reviews don’t trick me. I know the ones with the five star reviews aren’t real. I know a human typing looks like the fact that this issue is still not being addressed and I’m still gonna give this a bad review fix your main issue.","The issue with the regulation of how many chat I can use have still not been addressed for one. I don’t care about the update about the chats that now I can just modify how short and long it could be I could care less for the text box, but I’m focus on is the regulation cause this issue define and it’s so it’s so demonetized to the point where it’s impossible to put anything the slightly inappropriate and that’s the problem. The fact is I the breeze why I use it because for storytelling I liked it before when it was not even monetize like that’s the whole point of me writing it the fastest I care about the freedom that’s all and it’s a terrible terrible concept and these AI reviews don’t trick me. I know the ones with the five star reviews aren’t real. I know a human typing looks like the fact that this issue is still not being addressed and I’m still gonna give this a bad review fix your main issue.",Catstarlt,2.6.1,2026-10-06T02:05:41Z,False,itunes_rss_mostRecent,False,False
