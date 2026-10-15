@@ -5,7 +5,7 @@ on:
 
 concurrency:
   group: snapshot-rankings
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   rankings:
@@ -42,8 +42,25 @@ jobs:
           git add rankings/
           if git diff --staged --quiet; then
             echo "No ranking changes to commit."
-          else
-            git pull --rebase --autostash origin main
-            git commit -m "chore(data): daily App Store rankings snapshot [skip ci]"
-            git push origin main
+            exit 0
           fi
+
+          git commit -m "chore(data): daily App Store rankings snapshot [skip ci]"
+
+          # Push with retry in case remote main moved
+          MAX_RETRIES=3
+          for i in $(seq 1 $MAX_RETRIES); do
+            if git push origin main; then
+              echo "Successfully pushed changes to main."
+              exit 0
+            fi
+            echo "Push failed, pulling latest remote changes and retrying ($i/$MAX_RETRIES)..."
+            if ! git pull --rebase origin main; then
+              git rebase --abort || true
+              echo "Rebase conflict encountered; remote main already contains snapshot. Skipping."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Failed to push after $MAX_RETRIES attempts."
+          exit 1
